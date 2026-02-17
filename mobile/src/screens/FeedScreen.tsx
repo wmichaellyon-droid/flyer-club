@@ -2,7 +2,6 @@ import { useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   ImageBackground,
-  Linking,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -11,18 +10,22 @@ import {
   View,
 } from 'react-native';
 import { milesFromUserToEvent } from '../geo';
-import { shareEvent, shareEventBySms } from '../share';
 import { theme } from '../theme';
-import { EventItem, InteractionMap, IntentState, UserLocation, UserSetup } from '../types';
+import { EventItem, InteractionMap, IntentState, RadiusFilter, UserLocation, UserSetup } from '../types';
 
 interface FeedScreenProps {
   events: EventItem[];
   interactions: InteractionMap;
   user: UserSetup;
   userLocation: UserLocation;
+  radiusFilter: RadiusFilter;
+  onChangeRadius: (radius: RadiusFilter) => void;
   onOpenEvent: (eventId: string) => void;
   onToggleInterested: (eventId: string) => void;
   onSetGoing: (eventId: string) => void;
+  onShareEvent: (event: EventItem, destination: 'native' | 'sms') => Promise<void>;
+  onGetTickets: (event: EventItem) => Promise<void>;
+  onFlyerImpression: (eventId: string) => void;
 }
 
 interface RankedEvent {
@@ -35,6 +38,8 @@ interface FeedRow {
   id: string;
   rankedEvent: RankedEvent;
 }
+
+const radiusOptions: RadiusFilter[] = [2, 5, 10, 'city'];
 
 function eventRankScore(event: EventItem, distanceMiles: number) {
   const promoterWeight = event.postedByRole === 'promoter' ? 0.25 : 0;
@@ -65,6 +70,9 @@ function intentLabel(intent: IntentState) {
   if (intent === 'interested') {
     return 'Interested';
   }
+  if (intent === 'saved') {
+    return 'Saved';
+  }
   return 'Not set';
 }
 
@@ -75,6 +83,8 @@ function FeedCard({
   onOpenEvent,
   onToggleInterested,
   onSetGoing,
+  onShareEvent,
+  onGetTickets,
 }: {
   rankedEvent: RankedEvent;
   intent: IntentState;
@@ -82,6 +92,8 @@ function FeedCard({
   onOpenEvent: () => void;
   onToggleInterested: () => void;
   onSetGoing: () => void;
+  onShareEvent: (destination: 'native' | 'sms') => Promise<void>;
+  onGetTickets: () => Promise<void>;
 }) {
   const { event, distanceMiles } = rankedEvent;
   const lastTap = useRef<number>(0);
@@ -105,18 +117,6 @@ function FeedCard({
     singleTapTimer.current = setTimeout(() => {
       onOpenEvent();
     }, 250);
-  };
-
-  const onShare = async () => {
-    await shareEvent(event);
-  };
-
-  const onShareText = async () => {
-    await shareEventBySms(event);
-  };
-
-  const onGetTickets = async () => {
-    await Linking.openURL(event.ticketUrl);
   };
 
   return (
@@ -175,13 +175,13 @@ function FeedCard({
           <Pressable onPress={onToggleInterested} style={styles.actionBtn}>
             <Text style={styles.actionBtnLabel}>Interested</Text>
           </Pressable>
-          <Pressable onPress={onShare} style={styles.actionBtn}>
+          <Pressable onPress={() => void onShareEvent('native')} style={styles.actionBtn}>
             <Text style={styles.actionBtnLabel}>Share</Text>
           </Pressable>
-          <Pressable onPress={onShareText} style={styles.actionBtn}>
+          <Pressable onPress={() => void onShareEvent('sms')} style={styles.actionBtn}>
             <Text style={styles.actionBtnLabel}>Text</Text>
           </Pressable>
-          <Pressable onPress={onGetTickets} style={styles.actionBtn}>
+          <Pressable onPress={() => void onGetTickets()} style={styles.actionBtn}>
             <Text style={styles.actionBtnLabel}>Get Tickets</Text>
           </Pressable>
         </View>
@@ -200,13 +200,19 @@ export function FeedScreen({
   interactions,
   user,
   userLocation,
+  radiusFilter,
+  onChangeRadius,
   onOpenEvent,
   onToggleInterested,
   onSetGoing,
+  onShareEvent,
+  onGetTickets,
+  onFlyerImpression,
 }: FeedScreenProps) {
   const [chunkCount, setChunkCount] = useState(3);
   const { height } = useWindowDimensions();
-  const flyerHeight = Math.max(height - 220, 460);
+  const flyerHeight = Math.max(height - 250, 460);
+  const seenImpressions = useRef(new Set<string>());
 
   const rankedEvents = useMemo(() => {
     const withDistance = events.map((event) => {
@@ -218,8 +224,9 @@ export function FeedScreen({
       };
     });
 
-    const localFirst = withDistance.filter((item) => item.distanceMiles <= 28);
-    const source = localFirst.length > 0 ? localFirst : withDistance;
+    const radiusMiles = radiusFilter === 'city' ? Infinity : radiusFilter;
+    const inRadius = withDistance.filter((item) => item.distanceMiles <= radiusMiles);
+    const source = inRadius.length > 0 ? inRadius : withDistance;
 
     return source.sort((a, b) => {
       if (b.rankScore !== a.rankScore) {
@@ -227,7 +234,7 @@ export function FeedScreen({
       }
       return a.distanceMiles - b.distanceMiles;
     });
-  }, [events, userLocation]);
+  }, [events, userLocation, radiusFilter]);
 
   const feedRows = useMemo(() => {
     const rows: FeedRow[] = [];
@@ -242,6 +249,22 @@ export function FeedScreen({
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Home Feed</Text>
         <Text style={styles.headerSub}>Endless local flyers around {user.city}</Text>
+
+        <View style={styles.radiusRow}>
+          {radiusOptions.map((option) => {
+            const active = option === radiusFilter;
+            const label = option === 'city' ? 'Citywide' : `${option} mi`;
+            return (
+              <Pressable
+                key={String(option)}
+                onPress={() => onChangeRadius(option)}
+                style={[styles.radiusChip, active && styles.radiusChipActive]}
+              >
+                <Text style={[styles.radiusLabel, active && styles.radiusLabelActive]}>{label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       <FlatList
@@ -255,6 +278,20 @@ export function FeedScreen({
             setChunkCount((prev) => prev + 1);
           }
         }}
+        onViewableItemsChanged={({ viewableItems }) => {
+          for (const item of viewableItems) {
+            const row = item.item as FeedRow | undefined;
+            if (!row) {
+              continue;
+            }
+            const eventId = row.rankedEvent.event.id;
+            if (seenImpressions.current.has(eventId)) {
+              continue;
+            }
+            seenImpressions.current.add(eventId);
+            onFlyerImpression(eventId);
+          }
+        }}
         ListFooterComponent={<Text style={styles.footerText}>Loading more flyers...</Text>}
         renderItem={({ item }) => (
           <FeedCard
@@ -264,6 +301,8 @@ export function FeedScreen({
             onOpenEvent={() => onOpenEvent(item.rankedEvent.event.id)}
             onToggleInterested={() => onToggleInterested(item.rankedEvent.event.id)}
             onSetGoing={() => onSetGoing(item.rankedEvent.event.id)}
+            onShareEvent={(destination) => onShareEvent(item.rankedEvent.event, destination)}
+            onGetTickets={() => onGetTickets(item.rankedEvent.event)}
           />
         )}
       />
@@ -280,6 +319,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
     paddingTop: 6,
+    gap: 6,
   },
   headerTitle: {
     color: theme.text,
@@ -289,7 +329,30 @@ const styles = StyleSheet.create({
   headerSub: {
     color: theme.textMuted,
     fontSize: 13,
-    marginTop: 2,
+  },
+  radiusRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  radiusChip: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  radiusChipActive: {
+    borderColor: theme.primary,
+    backgroundColor: theme.primary,
+  },
+  radiusLabel: {
+    color: theme.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  radiusLabelActive: {
+    color: theme.text,
   },
   listContent: {
     paddingBottom: 20,

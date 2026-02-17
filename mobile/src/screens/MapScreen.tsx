@@ -1,22 +1,33 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND, EXPLORE_FILTERS } from '../mockData';
 import { milesBetweenPoints, milesFromUserToEvent } from '../geo';
-import { shareEvent, shareEventBySms } from '../share';
 import { theme } from '../theme';
-import { EventItem, EventKind, InteractionMap, IntentState, UserLocation, UserSetup } from '../types';
+import {
+  EventItem,
+  EventKind,
+  InteractionMap,
+  IntentState,
+  RadiusFilter,
+  UserLocation,
+  UserSetup,
+} from '../types';
 
 interface MapScreenProps {
   events: EventItem[];
   interactions: InteractionMap;
   user: UserSetup;
   userLocation: UserLocation;
+  radiusFilter: RadiusFilter;
+  onChangeRadius: (radius: RadiusFilter) => void;
   onOpenEvent: (eventId: string) => void;
   onToggleInterested: (eventId: string) => void;
   onSetGoing: (eventId: string) => void;
   onUpdateUserLocation: (coords: UserLocation) => void;
+  onShareEvent: (event: EventItem, destination: 'native' | 'sms') => Promise<void>;
+  onGetTickets: (event: EventItem) => Promise<void>;
 }
 
 interface EventWithDistance {
@@ -25,6 +36,7 @@ interface EventWithDistance {
 }
 
 const DEFAULT_DELTA = 0.085;
+const radiusOptions: RadiusFilter[] = [2, 5, 10, 'city'];
 
 const KIND_CONFIG: Record<EventKind, { color: string; label: string }> = {
   concert: { color: '#35A7FF', label: 'Concert' },
@@ -60,6 +72,9 @@ function intentLabel(intent: IntentState) {
   if (intent === 'interested') {
     return 'Interested';
   }
+  if (intent === 'saved') {
+    return 'Saved';
+  }
   return 'Not set';
 }
 
@@ -68,10 +83,14 @@ export function MapScreen({
   interactions,
   user,
   userLocation,
+  radiusFilter,
+  onChangeRadius,
   onOpenEvent,
   onToggleInterested,
   onSetGoing,
   onUpdateUserLocation,
+  onShareEvent,
+  onGetTickets,
 }: MapScreenProps) {
   const [activeChip, setActiveChip] = useState('Tonight');
   const [selectedKind, setSelectedKind] = useState<'all' | EventKind>('all');
@@ -110,6 +129,7 @@ export function MapScreen({
   }, [queryCenter, region.latitude, region.longitude]);
 
   const filteredEvents = useMemo<EventWithDistance[]>(() => {
+    const radiusMiles = radiusFilter === 'city' ? Infinity : radiusFilter;
     return events
       .filter((event) => filterByChip(event, activeChip))
       .filter((event) => (selectedKind === 'all' ? true : event.kind === selectedKind))
@@ -118,18 +138,14 @@ export function MapScreen({
         event,
         distanceMiles: milesFromUserToEvent(queryCenter, event),
       }))
-      .filter((item) => item.distanceMiles <= 12)
+      .filter((item) => item.distanceMiles <= radiusMiles)
       .sort((a, b) => a.distanceMiles - b.distanceMiles);
-  }, [events, activeChip, selectedKind, selectedSubcategory, queryCenter]);
+  }, [events, activeChip, selectedKind, selectedSubcategory, queryCenter, radiusFilter]);
 
   const selectedEvent = useMemo(
     () => filteredEvents.find((item) => item.event.id === selectedEventId) ?? null,
     [filteredEvents, selectedEventId],
   );
-
-  const onGetTickets = async (event: EventItem) => {
-    await Linking.openURL(event.ticketUrl);
-  };
 
   const onRecenter = async () => {
     setFindingLocation(true);
@@ -176,6 +192,25 @@ export function MapScreen({
       </View>
 
       <View style={styles.filterWrap}>
+        <View style={styles.chipRow}>
+          {radiusOptions.map((option) => {
+            const active = option === radiusFilter;
+            const label = option === 'city' ? 'Citywide' : `${option} mi`;
+            return (
+              <Pressable
+                key={String(option)}
+                style={[styles.chip, active && styles.chipActive]}
+                onPress={() => {
+                  onChangeRadius(option);
+                  setSelectedEventId(null);
+                }}
+              >
+                <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         <View style={styles.chipRow}>
           {EXPLORE_FILTERS.map((chip) => {
             const active = chip === activeChip;
@@ -323,13 +358,13 @@ export function MapScreen({
             <Pressable onPress={() => onToggleInterested(selectedEvent.event.id)} style={styles.actionBtn}>
               <Text style={styles.actionBtnLabel}>Interested</Text>
             </Pressable>
-            <Pressable onPress={() => shareEvent(selectedEvent.event)} style={styles.actionBtn}>
+            <Pressable onPress={() => void onShareEvent(selectedEvent.event, 'native')} style={styles.actionBtn}>
               <Text style={styles.actionBtnLabel}>Share</Text>
             </Pressable>
-            <Pressable onPress={() => shareEventBySms(selectedEvent.event)} style={styles.actionBtn}>
+            <Pressable onPress={() => void onShareEvent(selectedEvent.event, 'sms')} style={styles.actionBtn}>
               <Text style={styles.actionBtnLabel}>Text</Text>
             </Pressable>
-            <Pressable onPress={() => onGetTickets(selectedEvent.event)} style={styles.actionBtn}>
+            <Pressable onPress={() => void onGetTickets(selectedEvent.event)} style={styles.actionBtn}>
               <Text style={styles.actionBtnLabel}>Get Tickets</Text>
             </Pressable>
           </View>

@@ -16,13 +16,17 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Flyer Club uses your location to show nearby events in your feed and map."
+        "NSLocationWhenInUseUsageDescription": "Flyer Club uses your location to show nearby events in your feed and map.",
+        "NSCalendarsUsageDescription": "Flyer Club uses calendar access so you can save events and get reminders."
       }
     },
     "android": {
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "POST_NOTIFICATIONS",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -31,6 +35,9 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
+    "plugins": [
+      "expo-notifications"
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     }

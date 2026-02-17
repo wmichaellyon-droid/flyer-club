@@ -1,23 +1,27 @@
 import { useMemo, useState } from 'react';
-import {
-  FlatList,
-  Pressable,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { FlatList, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND, EXPLORE_FILTERS } from '../mockData';
+import { milesFromUserToEvent } from '../geo';
 import { theme } from '../theme';
-import { EventItem, EventKind } from '../types';
+import { EventItem, EventKind, RadiusFilter, UserLocation } from '../types';
 
 interface ExploreScreenProps {
   events: EventItem[];
+  userLocation: UserLocation;
+  radiusFilter: RadiusFilter;
+  onChangeRadius: (radius: RadiusFilter) => void;
   onOpenEvent: (eventId: string) => void;
 }
 
-export function ExploreScreen({ events, onOpenEvent }: ExploreScreenProps) {
+const radiusOptions: RadiusFilter[] = [2, 5, 10, 'city'];
+
+export function ExploreScreen({
+  events,
+  userLocation,
+  radiusFilter,
+  onChangeRadius,
+  onOpenEvent,
+}: ExploreScreenProps) {
   const [query, setQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>('Tonight');
   const [selectedKind, setSelectedKind] = useState<'all' | EventKind>('all');
@@ -30,31 +34,56 @@ export function ExploreScreen({ events, onOpenEvent }: ExploreScreenProps) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return events.filter((event) => {
-      const matchesText =
-        q.length === 0 ||
-        event.title.toLowerCase().includes(q) ||
-        event.venue.toLowerCase().includes(q) ||
-        event.neighborhood.toLowerCase().includes(q);
-      const matchesFilter = selectedFilter ? event.tags.includes(selectedFilter) : true;
-      const matchesKind = selectedKind === 'all' ? true : event.kind === selectedKind;
-      const matchesSubcategory =
-        selectedSubcategory === 'all' ? true : event.subcategory === selectedSubcategory;
-      return matchesText && matchesFilter && matchesKind && matchesSubcategory;
-    });
-  }, [events, query, selectedFilter, selectedKind, selectedSubcategory]);
+    const radiusMiles = radiusFilter === 'city' ? Infinity : radiusFilter;
+    return events
+      .map((event) => ({
+        event,
+        distanceMiles: milesFromUserToEvent(userLocation, event),
+      }))
+      .filter((item) => item.distanceMiles <= radiusMiles)
+      .filter((item) => {
+        const { event } = item;
+        const matchesText =
+          q.length === 0 ||
+          event.title.toLowerCase().includes(q) ||
+          event.venue.toLowerCase().includes(q) ||
+          event.neighborhood.toLowerCase().includes(q);
+        const matchesFilter = selectedFilter ? event.tags.includes(selectedFilter) : true;
+        const matchesKind = selectedKind === 'all' ? true : event.kind === selectedKind;
+        const matchesSubcategory =
+          selectedSubcategory === 'all' ? true : event.subcategory === selectedSubcategory;
+        return matchesText && matchesFilter && matchesKind && matchesSubcategory;
+      })
+      .sort((a, b) => a.distanceMiles - b.distanceMiles);
+  }, [events, query, selectedFilter, selectedKind, selectedSubcategory, userLocation, radiusFilter]);
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
         <Text style={styles.title}>Explore</Text>
         <TextInput
-          placeholder="Search Austin events"
+          placeholder="Search nearby events"
           placeholderTextColor={theme.textMuted}
           style={styles.search}
           value={query}
           onChangeText={setQuery}
         />
+
+        <View style={styles.filterRow}>
+          {radiusOptions.map((option) => {
+            const active = option === radiusFilter;
+            const label = option === 'city' ? 'Citywide' : `${option} mi`;
+            return (
+              <Pressable
+                key={String(option)}
+                onPress={() => onChangeRadius(option)}
+                style={[styles.filterChip, active && styles.filterChipActive]}
+              >
+                <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>{label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
         <View style={styles.filterRow}>
           {EXPLORE_FILTERS.map((filter) => {
@@ -122,23 +151,23 @@ export function ExploreScreen({ events, onOpenEvent }: ExploreScreenProps) {
 
         <FlatList
           data={filtered}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.event.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <View style={styles.emptyBox}>
               <Text style={styles.emptyTitle}>No events match right now.</Text>
-              <Text style={styles.emptySub}>Try another filter or search term.</Text>
+              <Text style={styles.emptySub}>Try another filter, radius, or search term.</Text>
             </View>
           }
           renderItem={({ item }) => (
-            <Pressable style={styles.eventRow} onPress={() => onOpenEvent(item.id)}>
+            <Pressable style={styles.eventRow} onPress={() => onOpenEvent(item.event.id)}>
               <View>
-                <Text style={styles.eventTitle}>{item.title}</Text>
+                <Text style={styles.eventTitle}>{item.event.title}</Text>
                 <Text style={styles.eventMeta}>
-                  {item.dateLabel} - {item.neighborhood} - {item.distanceMiles.toFixed(1)} mi
+                  {item.event.dateLabel} - {item.event.neighborhood} - {item.distanceMiles.toFixed(1)} mi
                 </Text>
-                <Text style={styles.eventMeta}>{item.category} - {item.subcategory}</Text>
+                <Text style={styles.eventMeta}>{item.event.category} - {item.event.subcategory}</Text>
               </View>
               <Text style={styles.rowLink}>Open</Text>
             </Pressable>

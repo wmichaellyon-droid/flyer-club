@@ -206,3 +206,4 @@ Detect whether uploaded content is an event flyer with high precision.
 - Technical framework: `docs/app-framework.md`
 - Flyer-only upload moderation guardrails: `docs/flyer-upload-guardrails.md`
 - Share links and SMS preview setup: `docs/share-links.md`
+- Backend + production setup: `docs/backend-setup.md`

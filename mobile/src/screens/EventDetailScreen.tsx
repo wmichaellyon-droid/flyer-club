@@ -1,16 +1,16 @@
+import { useState } from 'react';
 import {
   ImageBackground,
-  Linking,
   Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
-import { shareEvent, shareEventBySms } from '../share';
 import { theme } from '../theme';
-import { EventItem, IntentState } from '../types';
+import { EventItem, IntentState, ReportReason } from '../types';
 
 interface EventDetailScreenProps {
   event: EventItem;
@@ -18,7 +18,20 @@ interface EventDetailScreenProps {
   onBack: () => void;
   onToggleInterested: () => void;
   onSetGoing: () => void;
+  onShareEvent: (destination: 'native' | 'sms') => Promise<void>;
+  onGetTickets: () => Promise<void>;
+  onAddToCalendar: () => Promise<void>;
+  onReportEvent: (reason: ReportReason, details: string) => Promise<void>;
+  onBlockOrganizer: () => Promise<void>;
 }
+
+const reportReasons: { id: ReportReason; label: string }[] = [
+  { id: 'scam_or_fraud', label: 'Scam/Fraud' },
+  { id: 'wrong_details', label: 'Wrong details' },
+  { id: 'harassment_or_hate', label: 'Harassment/Hate' },
+  { id: 'spam', label: 'Spam' },
+  { id: 'other', label: 'Other' },
+];
 
 export function EventDetailScreen({
   event,
@@ -26,17 +39,37 @@ export function EventDetailScreen({
   onBack,
   onToggleInterested,
   onSetGoing,
+  onShareEvent,
+  onGetTickets,
+  onAddToCalendar,
+  onReportEvent,
+  onBlockOrganizer,
 }: EventDetailScreenProps) {
-  const onShare = async () => {
-    await shareEvent(event);
+  const [selectedReason, setSelectedReason] = useState<ReportReason>('wrong_details');
+  const [reportDetails, setReportDetails] = useState('');
+  const [reportState, setReportState] = useState<'idle' | 'sent' | 'error'>('idle');
+  const [actionBusy, setActionBusy] = useState(false);
+
+  const submitReport = async () => {
+    setActionBusy(true);
+    try {
+      await onReportEvent(selectedReason, reportDetails.trim());
+      setReportState('sent');
+      setReportDetails('');
+    } catch {
+      setReportState('error');
+    } finally {
+      setActionBusy(false);
+    }
   };
 
-  const onShareText = async () => {
-    await shareEventBySms(event);
-  };
-
-  const onGetTickets = async () => {
-    await Linking.openURL(event.ticketUrl);
+  const blockOrganizer = async () => {
+    setActionBusy(true);
+    try {
+      await onBlockOrganizer();
+    } finally {
+      setActionBusy(false);
+    }
   };
 
   return (
@@ -75,11 +108,14 @@ export function EventDetailScreen({
           <Pressable onPress={onToggleInterested} style={styles.actionBtn}>
             <Text style={styles.actionLabel}>Interested</Text>
           </Pressable>
-          <Pressable onPress={onShare} style={styles.actionBtn}>
+          <Pressable onPress={() => void onShareEvent('native')} style={styles.actionBtn}>
             <Text style={styles.actionLabel}>Share</Text>
           </Pressable>
-          <Pressable onPress={onShareText} style={styles.actionBtn}>
+          <Pressable onPress={() => void onShareEvent('sms')} style={styles.actionBtn}>
             <Text style={styles.actionLabel}>Text</Text>
+          </Pressable>
+          <Pressable onPress={() => void onAddToCalendar()} style={styles.actionBtn}>
+            <Text style={styles.actionLabel}>Add Calendar</Text>
           </Pressable>
         </View>
 
@@ -96,6 +132,55 @@ export function EventDetailScreen({
             ))}
           </View>
         </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Safety</Text>
+          <Text style={styles.safetyHint}>Report bad events or block organizers to keep your feed clean.</Text>
+
+          <View style={styles.reasonRow}>
+            {reportReasons.map((reason) => {
+              const active = selectedReason === reason.id;
+              return (
+                <Pressable
+                  key={reason.id}
+                  onPress={() => setSelectedReason(reason.id)}
+                  style={[styles.reasonChip, active && styles.reasonChipActive]}
+                >
+                  <Text style={[styles.reasonLabel, active && styles.reasonLabelActive]}>{reason.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <TextInput
+            style={styles.reportInput}
+            value={reportDetails}
+            onChangeText={setReportDetails}
+            placeholder="Optional details"
+            placeholderTextColor={theme.textMuted}
+            multiline
+          />
+
+          <View style={styles.safetyActionRow}>
+            <Pressable
+              onPress={() => void submitReport()}
+              disabled={actionBusy}
+              style={[styles.safetyBtn, styles.reportBtn]}
+            >
+              <Text style={styles.safetyBtnLabel}>Report Event</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => void blockOrganizer()}
+              disabled={actionBusy}
+              style={[styles.safetyBtn, styles.blockBtn]}
+            >
+              <Text style={styles.safetyBtnLabel}>Block Organizer</Text>
+            </Pressable>
+          </View>
+
+          {reportState === 'sent' && <Text style={styles.reportSent}>Thanks. Report submitted.</Text>}
+          {reportState === 'error' && <Text style={styles.reportError}>Could not submit report.</Text>}
+        </View>
       </ScrollView>
 
       <View style={styles.stickyBar}>
@@ -103,7 +188,7 @@ export function EventDetailScreen({
           <Text style={styles.priceLabel}>Starting at</Text>
           <Text style={styles.price}>{event.priceLabel}</Text>
         </View>
-        <Pressable style={styles.ticketBtn} onPress={onGetTickets}>
+        <Pressable style={styles.ticketBtn} onPress={() => void onGetTickets()}>
           <Text style={styles.ticketBtnLabel}>Get Tickets</Text>
         </Pressable>
       </View>
@@ -117,7 +202,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.bg,
   },
   container: {
-    paddingBottom: 100,
+    paddingBottom: 120,
     gap: 12,
   },
   hero: {
@@ -174,7 +259,7 @@ const styles = StyleSheet.create({
     borderColor: theme.border,
     borderRadius: 14,
     padding: 14,
-    gap: 4,
+    gap: 6,
   },
   sectionTitle: {
     color: theme.text,
@@ -248,6 +333,78 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingHorizontal: 8,
     paddingVertical: 4,
+  },
+  safetyHint: {
+    color: theme.textMuted,
+    fontSize: 12,
+  },
+  reasonRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  reasonChip: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  reasonChipActive: {
+    borderColor: theme.primary,
+    backgroundColor: theme.primary,
+  },
+  reasonLabel: {
+    color: theme.textMuted,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  reasonLabelActive: {
+    color: theme.text,
+  },
+  reportInput: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 12,
+    backgroundColor: theme.surfaceAlt,
+    color: theme.text,
+    minHeight: 70,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    textAlignVertical: 'top',
+    fontSize: 12,
+  },
+  safetyActionRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  safetyBtn: {
+    flex: 1,
+    borderRadius: 10,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  reportBtn: {
+    backgroundColor: '#c43f47',
+  },
+  blockBtn: {
+    backgroundColor: '#474a61',
+  },
+  safetyBtnLabel: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  reportSent: {
+    color: '#74d38d',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  reportError: {
+    color: '#f47373',
+    fontSize: 12,
+    fontWeight: '600',
   },
   stickyBar: {
     position: 'absolute',

@@ -1,6 +1,9 @@
 export type TabKey = 'Feed' | 'Map' | 'Explore' | 'Upload' | 'Profile';
 
 export type IntentState = 'interested' | 'going' | 'saved' | undefined;
+export type StoredIntentState = 'interested' | 'going' | 'saved';
+export type ModerationStatus = 'accepted' | 'review' | 'rejected';
+export type RadiusFilter = 2 | 5 | 10 | 'city';
 
 export type IntentFilter = 'Interested' | 'Going' | 'Saved';
 
@@ -19,8 +22,11 @@ export interface EventItem {
   id: string;
   title: string;
   promoter: string;
+  postedByUserId: string;
   dateLabel: string;
   timeLabel: string;
+  startAtIso: string;
+  endAtIso: string;
   venue: string;
   address: string;
   neighborhood: string;
@@ -40,9 +46,12 @@ export interface EventItem {
   friendInterested: number;
   friendGoing: number;
   postedByRole: UserRole;
+  moderationStatus: ModerationStatus;
+  moderationReason?: string;
 }
 
 export interface UserSetup {
+  id?: string;
   email: string;
   profileName: string;
   profileImageUrl: string;
@@ -56,5 +65,35 @@ export interface UserLocation {
   latitude: number;
   longitude: number;
 }
+
+export interface EventDraft {
+  title: string;
+  promoter: string;
+  startAtIso: string;
+  endAtIso: string;
+  venue: string;
+  address: string;
+  neighborhood: string;
+  city: string;
+  latitude: number;
+  longitude: number;
+  category: string;
+  kind: EventKind;
+  subcategory: EventSubcategory;
+  ageRating: string;
+  tags: string[];
+  priceLabel: string;
+  ticketUrl: string;
+  flyerImageUrl: string;
+  heroColor: string;
+  description: string;
+}
+
+export type ReportReason =
+  | 'scam_or_fraud'
+  | 'wrong_details'
+  | 'harassment_or_hate'
+  | 'spam'
+  | 'other';
 
 export type InteractionMap = Record<string, IntentState>;
