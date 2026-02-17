@@ -17,7 +17,11 @@
 6. Profile
 
 Pre-app gate:
-- Required login screen before onboarding (`email`, `profile name`, optional profile photo, event taste quiz).
+- Required step-by-step login flow before onboarding:
+- step 1: profile name
+- step 2: email
+- step 3: optional profile photo
+- steps 4-8: event taste quiz (one question at a time)
 
 Bottom navigation for MVP: `Feed`, `Explore`, `Upload`, `Profile`.
 

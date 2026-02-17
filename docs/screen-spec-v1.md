@@ -6,16 +6,17 @@ Goal:
 - Capture required identity and event-taste signals before app setup.
 
 Key UI blocks:
-- Required email field.
 - Required profile name field.
+- Required email field.
 - Optional profile photo URL field.
-- 5-question event taste quiz.
-- Continue CTA (disabled until required fields + all questions are complete).
+- One-question-at-a-time event taste quiz (5 total).
+- Locked `Next` progression (next step only unlocks when current step is valid).
+- Step progress indicator + back action.
 
 Primary actions:
-- Complete required fields
-- Answer all event taste questions
-- Continue to onboarding
+- Complete current step
+- Tap `Next` to unlock next step
+- Tap `Back` to edit previous step
 
 Data required:
 - email
