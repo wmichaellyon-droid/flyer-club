@@ -102,7 +102,8 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'A late printmaking session with mini zine tables, open collage wall, and low-key ambient sets between workshops.',
     ticketUrl: 'https://example.com/tickets/warehouse-zine-night',
-    flyerImageUrl: 'https://loremflickr.com/1080/1920/punk,concert,poster?lock=901',
+    flyerImageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/2/2c/1st_Woodcuts_Exhibition_of_%22Ryt%22_Association.jpg',
     heroColor: '#3a1b53',
     latitude: 30.2576,
     longitude: -97.7177,
@@ -129,7 +130,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'A projected silent thriller scored by local synth duo, with blankets, thermos coffee, and a bring-your-own-chair setup.',
     ticketUrl: 'https://example.com/tickets/silent-film-live-score',
-    flyerImageUrl: 'https://loremflickr.com/1080/1920/indie,film,poster?lock=902',
+    flyerImageUrl: 'https://upload.wikimedia.org/wikipedia/commons/0/07/The_Cameraman_%28Keaton%29_poster.jpg',
     heroColor: '#23324d',
     latitude: 30.2624,
     longitude: -97.7024,
@@ -156,7 +157,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'Curated vintage racks, hand-sewn patch bar, and barter lane for clothes, records, and old cameras.',
     ticketUrl: 'https://example.com/tickets/mutant-flea',
-    flyerImageUrl: 'https://loremflickr.com/1080/1920/diy,market,poster?lock=903',
+    flyerImageUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/47/Affiche_Foire_2013_%2814468465820%29.jpg',
     heroColor: '#5f2e2c',
     latitude: 30.2632,
     longitude: -97.7285,
@@ -183,7 +184,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'Five original 15-minute pieces in one night, rotating sets every 30 minutes with cast Q&A between rounds.',
     ticketUrl: 'https://example.com/tickets/micro-theater-marathon',
-    flyerImageUrl: 'https://loremflickr.com/1080/1920/theater,poster,flyer?lock=904',
+    flyerImageUrl: 'https://upload.wikimedia.org/wikipedia/commons/7/7f/Ionesco-affiche.jpg',
     heroColor: '#2d4b3d',
     latitude: 30.2741,
     longitude: -97.7188,
@@ -210,7 +211,8 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'Underground dance floor with open deck slots, no VIP sections, and a community-coded dress-up theme each week.',
     ticketUrl: 'https://example.com/tickets/open-deck-night',
-    flyerImageUrl: 'https://loremflickr.com/1080/1920/punk,nightlife,flyer?lock=905',
+    flyerImageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/9/9b/Mixmag_%26_DSI_Tour_2010_with_Jack_Beats_and_Surkin.jpg',
     heroColor: '#4b245c',
     latitude: 30.2665,
     longitude: -97.7394,
@@ -237,7 +239,8 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'Street-style spoken word under string lights with 3-minute rounds, live vote cards, and free chai.',
     ticketUrl: 'https://example.com/tickets/parking-lot-poetry-slam',
-    flyerImageUrl: 'https://loremflickr.com/1080/1920/poetry,poster,flyer?lock=906',
+    flyerImageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/7/7e/John_Ashbery_%28MCA_poetry_reading_poster%2C_1977%29.jpg',
     heroColor: '#214442',
     latitude: 30.257,
     longitude: -97.7212,
@@ -264,7 +267,8 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'Bring hardware synths, samplers, or drum machines for a no-laptop jam session and skill-share mini demos.',
     ticketUrl: 'https://example.com/tickets/no-laptop-jam-circle',
-    flyerImageUrl: 'https://loremflickr.com/1080/1920/workshop,poster,flyer?lock=907',
+    flyerImageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/0/01/Tokyo_Festival_of_Modular_2016_-_6.10_Friday_Premium_Live_of_Modular_-_program_%282016-06-10_by_Kazuhisa_OTSUBO%29.jpg',
     heroColor: '#3c3f66',
     latitude: 30.2501,
     longitude: -97.7089,
@@ -291,7 +295,8 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'Community cookout, local resource tables, and short teach-ins on tenant rights, first aid, and neighborhood organizing.',
     ticketUrl: 'https://example.com/tickets/mutual-aid-food-fair',
-    flyerImageUrl: 'https://loremflickr.com/1080/1920/community,event,poster?lock=908',
+    flyerImageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/e/e3/Affiche_Foire_%C3%A0_l%27autogestion_%2820883091581%29.jpg',
     heroColor: '#6b5130',
     latitude: 30.2637,
     longitude: -97.7001,
