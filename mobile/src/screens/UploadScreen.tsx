@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
+import { buildCanonicalEventTags, SUGGESTED_EVENT_TAGS } from '../discovery';
 import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND } from '../mockData';
 import { ThemePalette, useAppTheme } from '../theme';
 import { combineDateAndTime, defaultEventEndIso } from '../time';
@@ -46,6 +47,17 @@ function clampUnit(value: number) {
     return 1;
   }
   return value;
+}
+
+function parseTagsInput(input: string) {
+  return input
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+function tagsToInput(tags: string[]) {
+  return tags.join(',');
 }
 
 export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateEvent }: UploadScreenProps) {
@@ -98,6 +110,21 @@ export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateE
 
   const canArmTagging = draftEntityName.trim().length > 0;
   const canPlaceTag = canArmTagging && flyerImageUrl.startsWith('http');
+  const selectedTags = useMemo(() => parseTagsInput(tags), [tags]);
+  const enrichedTagsPreview = useMemo(
+    () =>
+      buildCanonicalEventTags({
+        title,
+        description,
+        category,
+        subcategory,
+        kind,
+        venue,
+        promoter,
+        tags: selectedTags,
+      }),
+    [title, description, category, subcategory, kind, venue, promoter, selectedTags],
+  );
 
   const resetForm = () => {
     setTitle('');
@@ -170,10 +197,16 @@ export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateE
       kind,
       subcategory: subcategory.trim(),
       ageRating: ageRating.trim(),
-      tags: tags
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter(Boolean),
+      tags: buildCanonicalEventTags({
+        title: title.trim(),
+        description: description.trim(),
+        category: category.trim(),
+        subcategory: subcategory.trim(),
+        kind,
+        venue: venue.trim(),
+        promoter: promoter.trim(),
+        tags: parseTagsInput(tags),
+      }),
       priceLabel: priceLabel.trim(),
       ticketUrl: ticketUrl.trim(),
       flyerImageUrl: flyerImageUrl.trim(),
@@ -365,6 +398,36 @@ export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateE
             value={tags}
             onChangeText={setTags}
           />
+          <View style={styles.tagHelperCard}>
+            <Text style={styles.tagHelperTitle}>Quick tags</Text>
+            <View style={styles.chips}>
+              {SUGGESTED_EVENT_TAGS.map((tag) => {
+                const active = selectedTags.some((item) => item.toLowerCase() === tag.toLowerCase());
+                return (
+                  <Pressable
+                    key={tag}
+                    style={[styles.chip, active && styles.chipActive]}
+                    onPress={() => {
+                      if (active) {
+                        setTags(
+                          tagsToInput(
+                            selectedTags.filter((item) => item.toLowerCase() !== tag.toLowerCase()),
+                          ),
+                        );
+                        return;
+                      }
+                      setTags(tagsToInput([...selectedTags, tag]));
+                    }}
+                  >
+                    <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{tag}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text style={styles.tagHelperHint}>
+              Auto-enriched tags: {enrichedTagsPreview.length > 0 ? enrichedTagsPreview.join(', ') : 'none yet'}
+            </Text>
+          </View>
           <TextInput
             style={styles.input}
             placeholder="Ticket URL"
@@ -665,6 +728,23 @@ const createStyles = (theme: ThemePalette) =>
   },
   chipLabelActive: {
     color: theme.text,
+  },
+  tagHelperCard: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 10,
+    backgroundColor: '#ffffff06',
+    padding: 10,
+    gap: 7,
+  },
+  tagHelperTitle: {
+    color: theme.text,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  tagHelperHint: {
+    color: theme.textMuted,
+    fontSize: 10,
   },
   tagBuilderCard: {
     borderWidth: 1,

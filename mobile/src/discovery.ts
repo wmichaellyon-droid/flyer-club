@@ -1,21 +1,13 @@
-import { EventItem, EventKind, InteractionMap, IntentState } from './types';
+import { EventDraft, EventItem, EventKind, InteractionMap, IntentState } from './types';
 
-export type SceneModeId = 'auto' | 'punk' | 'diy' | 'film' | 'comedy' | 'mutual_aid' | 'campus';
 export type SearchMatchType = 'event' | 'venue' | 'promoter';
-
-interface SceneDefinition {
-  id: Exclude<SceneModeId, 'auto'>;
-  label: string;
-  kinds: EventKind[];
-  keywords: string[];
-}
 
 interface WeightedMap {
   [key: string]: number;
 }
 
 export interface InteractionProfile {
-  scenes: WeightedMap;
+  tags: WeightedMap;
   kinds: WeightedMap;
   subcategories: WeightedMap;
   categories: WeightedMap;
@@ -23,69 +15,97 @@ export interface InteractionProfile {
   promoters: WeightedMap;
 }
 
-const SCENE_DEFINITIONS: SceneDefinition[] = [
-  {
-    id: 'punk',
-    label: 'Punk',
-    kinds: ['concert'],
-    keywords: ['punk', 'hardcore', 'rock', 'metal', 'garage', 'alt', 'noise'],
-  },
-  {
-    id: 'diy',
-    label: 'DIY',
-    kinds: ['concert', 'arts', 'meetup'],
-    keywords: ['diy', 'zine', 'print', 'underground', 'warehouse', 'indie', 'collective'],
-  },
-  {
-    id: 'film',
-    label: 'Film',
-    kinds: ['film'],
-    keywords: ['film', 'cinema', 'screening', 'arthouse', 'documentary', 'horror'],
-  },
-  {
-    id: 'comedy',
-    label: 'Comedy',
-    kinds: ['comedy'],
-    keywords: ['comedy', 'stand-up', 'improv', 'open mic', 'alt comedy'],
-  },
-  {
-    id: 'mutual_aid',
-    label: 'Mutual Aid',
-    kinds: ['meetup'],
-    keywords: ['mutual aid', 'community', 'teach-in', 'food fair', 'care', 'network', 'meetup'],
-  },
-  {
-    id: 'campus',
-    label: 'Campus',
-    kinds: ['concert', 'film', 'meetup', 'comedy', 'arts'],
-    keywords: ['campus', 'college', 'university', 'student', 'dorm', 'frat', 'sorority'],
-  },
+export const SUGGESTED_EVENT_TAGS = [
+  'punk',
+  'goth',
+  'rock',
+  'pop',
+  'DIY',
+  'house-show',
+  'music',
+  'film',
+  'queer',
+  'mutual aid',
+  'fundraiser',
+  'food',
+  'vegan food',
 ];
 
-export const SCENE_MODES: { id: SceneModeId; label: string }[] = [
-  { id: 'auto', label: 'Auto' },
-  ...SCENE_DEFINITIONS.map((item) => ({ id: item.id, label: item.label })),
-];
+const TAG_KEYWORDS: Record<string, string[]> = {
+  punk: ['punk', 'hardcore', 'garage punk'],
+  goth: ['goth', 'darkwave', 'post-punk'],
+  rock: ['rock', 'indie rock', 'alt rock'],
+  pop: ['pop', 'synth pop'],
+  diy: ['diy', 'zine', 'underground', 'independent'],
+  'house-show': ['house show', 'house-show', 'living room show'],
+  music: ['concert', 'live music', 'show', 'lineup', 'dj set', 'band'],
+  film: ['film', 'cinema', 'screening', 'movie', 'documentary', 'arthouse'],
+  queer: ['queer', 'lgbtq', 'drag', 'trans', 'pride'],
+  'mutual aid': ['mutual aid', 'community support', 'care network'],
+  fundraiser: ['fundraiser', 'benefit', 'donation', 'charity'],
+  food: ['food', 'cookout', 'dinner', 'brunch', 'snack', 'eat'],
+  'vegan food': ['vegan', 'plant-based'],
+  comedy: ['comedy', 'stand-up', 'improv', 'open mic'],
+  metal: ['metal', 'thrash', 'death metal'],
+  electronic: ['electronic', 'techno', 'house', 'edm', 'synth'],
+  jazz: ['jazz', 'bebop', 'fusion'],
+  community: ['community', 'meetup', 'workshop', 'collective', 'market'],
+  poetry: ['poetry', 'spoken word'],
+  theater: ['theater', 'theatre', 'play', 'performance'],
+  campus: ['campus', 'college', 'university', 'student'],
+};
+
+const TAG_SYNONYMS: Record<string, string> = {
+  'house show': 'house-show',
+  houseshow: 'house-show',
+  'house-show': 'house-show',
+  diy: 'diy',
+  'd.i.y.': 'diy',
+  goth: 'goth',
+  punk: 'punk',
+  rock: 'rock',
+  pop: 'pop',
+  film: 'film',
+  movie: 'film',
+  queer: 'queer',
+  'mutual-aid': 'mutual aid',
+  mutualaid: 'mutual aid',
+  'mutual aid': 'mutual aid',
+  fundraiser: 'fundraiser',
+  fundraisers: 'fundraiser',
+  food: 'food',
+  vegan: 'vegan food',
+  'vegan food': 'vegan food',
+  music: 'music',
+};
 
 function normalize(value: string) {
   return value.trim().toLowerCase();
 }
 
-function eventText(event: EventItem) {
-  return normalize(
-    [
-      event.title,
-      event.promoter,
-      event.venue,
-      event.neighborhood,
-      event.category,
-      event.subcategory,
-      event.kind,
-      event.tags.join(' '),
-      event.description,
-      event.flyerTags.map((tag) => tag.entityName).join(' '),
-    ].join(' '),
-  );
+function normalizedTagKey(value: string) {
+  return normalize(value).replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
+}
+
+function canonicalTag(value: string) {
+  const key = normalizedTagKey(value);
+  if (!key) {
+    return null;
+  }
+
+  if (TAG_SYNONYMS[key]) {
+    return TAG_SYNONYMS[key];
+  }
+
+  if (TAG_KEYWORDS[key]) {
+    return key;
+  }
+
+  return key;
+}
+
+function dedupe(values: string[]) {
+  return Array.from(new Set(values.map((item) => normalize(item)).filter(Boolean)));
 }
 
 function addWeight(target: WeightedMap, key: string, amount: number) {
@@ -127,44 +147,92 @@ function weightForIntent(intent: IntentState) {
   return 0;
 }
 
-export function eventSceneScore(event: EventItem, scene: SceneModeId) {
-  if (scene === 'auto') {
-    return 0;
-  }
+function inferTagsFromText(text: string) {
+  const normalizedText = normalize(text);
+  const inferred: string[] = [];
 
-  const definition = SCENE_DEFINITIONS.find((item) => item.id === scene);
-  if (!definition) {
-    return 0;
-  }
-
-  let score = 0;
-  const text = eventText(event);
-
-  if (definition.kinds.includes(event.kind)) {
-    score += 0.35;
-  }
-
-  for (const keyword of definition.keywords) {
-    if (text.includes(keyword)) {
-      score += 0.14;
+  for (const [tag, keywords] of Object.entries(TAG_KEYWORDS)) {
+    if (keywords.some((keyword) => normalizedText.includes(normalize(keyword)))) {
+      inferred.push(tag);
     }
   }
 
-  return Math.min(1, score);
+  return inferred;
 }
 
-export function eventMatchesScene(event: EventItem, scene: SceneModeId) {
-  if (scene === 'auto') {
-    return true;
+function inferKindTags(kind: EventKind) {
+  if (kind === 'concert') {
+    return ['music'];
   }
-  return eventSceneScore(event, scene) >= 0.22;
+  if (kind === 'film') {
+    return ['film'];
+  }
+  if (kind === 'comedy') {
+    return ['comedy'];
+  }
+  if (kind === 'meetup') {
+    return ['community'];
+  }
+  if (kind === 'arts') {
+    return ['diy'];
+  }
+  return [];
+}
+
+export function buildCanonicalEventTags(input: {
+  title: string;
+  description: string;
+  category: string;
+  subcategory: string;
+  kind: EventKind;
+  venue?: string;
+  promoter?: string;
+  tags?: string[];
+}) {
+  const manual = (input.tags ?? [])
+    .map((tag) => canonicalTag(tag))
+    .filter((tag): tag is string => Boolean(tag));
+
+  const inferred = inferTagsFromText(
+    [input.title, input.description, input.category, input.subcategory, input.venue ?? '', input.promoter ?? ''].join(
+      ' ',
+    ),
+  );
+
+  return dedupe([...manual, ...inferKindTags(input.kind), ...inferred]);
+}
+
+function eventTags(event: EventItem) {
+  return buildCanonicalEventTags({
+    title: event.title,
+    description: event.description,
+    category: event.category,
+    subcategory: event.subcategory,
+    kind: event.kind,
+    venue: event.venue,
+    promoter: event.promoter,
+    tags: event.tags,
+  });
+}
+
+export function buildDraftTags(draft: EventDraft) {
+  return buildCanonicalEventTags({
+    title: draft.title,
+    description: draft.description,
+    category: draft.category,
+    subcategory: draft.subcategory,
+    kind: draft.kind,
+    venue: draft.venue,
+    promoter: draft.promoter,
+    tags: draft.tags,
+  });
 }
 
 export function buildInteractionProfile(events: EventItem[], interactions: InteractionMap): InteractionProfile {
   const eventById = new Map(events.map((event) => [event.id, event]));
 
   const profile: InteractionProfile = {
-    scenes: {},
+    tags: {},
     kinds: {},
     subcategories: {},
     categories: {},
@@ -188,50 +256,32 @@ export function buildInteractionProfile(events: EventItem[], interactions: Inter
 
     addWeight(profile.kinds, event.kind, weight);
     addWeight(profile.subcategories, event.subcategory, weight);
-    addWeight(profile.categories, event.category, weight * 0.9);
+    addWeight(profile.categories, event.category, weight * 0.85);
     addWeight(profile.venues, event.venue, weight);
-    addWeight(profile.promoters, event.promoter, weight * 0.95);
+    addWeight(profile.promoters, event.promoter, weight * 0.9);
 
-    for (const definition of SCENE_DEFINITIONS) {
-      const sceneScore = eventSceneScore(event, definition.id);
-      if (sceneScore > 0) {
-        addWeight(profile.scenes, definition.id, weight * sceneScore);
-      }
+    for (const tag of eventTags(event)) {
+      addWeight(profile.tags, tag, weight * 1.1);
     }
   }
 
   return profile;
 }
 
-export function topSceneFromProfile(profile: InteractionProfile): Exclude<SceneModeId, 'auto'> | null {
-  let topScene: Exclude<SceneModeId, 'auto'> | null = null;
-  let best = 0;
-  for (const definition of SCENE_DEFINITIONS) {
-    const weight = profile.scenes[definition.id] ?? 0;
-    if (weight > best) {
-      best = weight;
-      topScene = definition.id;
-    }
-  }
-  return topScene;
-}
-
 export function eventPreferenceBoost(event: EventItem, profile: InteractionProfile) {
-  const kindBoost = normalizedWeight(profile.kinds, event.kind) * 0.26;
-  const subcategoryBoost = normalizedWeight(profile.subcategories, event.subcategory) * 0.32;
-  const categoryBoost = normalizedWeight(profile.categories, event.category) * 0.2;
-  const venueBoost = normalizedWeight(profile.venues, event.venue) * 0.3;
-  const promoterBoost = normalizedWeight(profile.promoters, event.promoter) * 0.2;
+  const kindBoost = normalizedWeight(profile.kinds, event.kind) * 0.18;
+  const subcategoryBoost = normalizedWeight(profile.subcategories, event.subcategory) * 0.24;
+  const categoryBoost = normalizedWeight(profile.categories, event.category) * 0.16;
+  const venueBoost = normalizedWeight(profile.venues, event.venue) * 0.24;
+  const promoterBoost = normalizedWeight(profile.promoters, event.promoter) * 0.14;
 
-  let sceneBoost = 0;
-  for (const definition of SCENE_DEFINITIONS) {
-    sceneBoost = Math.max(
-      sceneBoost,
-      normalizedWeight(profile.scenes, definition.id) * eventSceneScore(event, definition.id) * 0.34,
-    );
+  const tags = eventTags(event);
+  let tagBoost = 0;
+  for (const tag of tags) {
+    tagBoost = Math.max(tagBoost, normalizedWeight(profile.tags, tag));
   }
 
-  return kindBoost + subcategoryBoost + categoryBoost + venueBoost + promoterBoost + sceneBoost;
+  return kindBoost + subcategoryBoost + categoryBoost + venueBoost + promoterBoost + tagBoost * 0.42;
 }
 
 export function eventSearchScore(
@@ -268,8 +318,8 @@ export function eventSearchScore(
   scoreField(event.subcategory, 1.8, 'event');
   scoreField(event.neighborhood, 1.3, 'event');
   scoreField(event.description, 0.8, 'event');
-  for (const tag of event.tags) {
-    scoreField(tag, 1.1, 'event');
+  for (const tag of eventTags(event)) {
+    scoreField(tag, 1.3, 'event');
   }
 
   scoreField(event.venue, 3.7, 'venue');
@@ -288,4 +338,3 @@ export function eventSearchScore(
 
   return { score, matchedTypes };
 }
-

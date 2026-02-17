@@ -12,13 +12,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import {
+  buildCanonicalEventTags,
   buildInteractionProfile,
-  eventMatchesScene,
   eventPreferenceBoost,
-  eventSceneScore,
-  SCENE_MODES,
-  SceneModeId,
-  topSceneFromProfile,
 } from '../discovery';
 import { milesFromUserToEvent } from '../geo';
 import { ThemePalette, useAppTheme } from '../theme';
@@ -64,12 +60,22 @@ function buildUserTasteCorpus(user: UserSetup) {
 }
 
 function eventAffinityScore(event: EventItem, userTasteCorpus: string) {
+  const canonicalTags = buildCanonicalEventTags({
+    title: event.title,
+    description: event.description,
+    category: event.category,
+    subcategory: event.subcategory,
+    kind: event.kind,
+    venue: event.venue,
+    promoter: event.promoter,
+    tags: event.tags,
+  });
   const eventText = normalizeText(
     [
       event.title,
       event.category,
       event.subcategory,
-      event.tags.join(' '),
+      canonicalTags.join(' '),
       event.description,
       event.kind,
       event.venue,
@@ -139,7 +145,6 @@ function eventRankScore(
   user: UserSetup,
   intent: IntentState,
   nowMs: number,
-  selectedScene: SceneModeId,
   interactionBoost: number,
   selectedVenue: string,
 ) {
@@ -150,7 +155,6 @@ function eventRankScore(
   const distanceWeight = Math.max(0, 0.52 - distanceMiles * 0.055);
   const recencyWeight = freshnessScore(event.startAtIso, nowMs);
   const moderationWeight = event.moderationStatus === 'accepted' ? 0.06 : -0.2;
-  const sceneWeight = selectedScene === 'auto' ? 0 : eventSceneScore(event, selectedScene) * 0.36;
   const venueWeight = selectedVenue === event.venue ? 0.24 : 0;
   const roleWeight =
     user.role === 'concert_lover' && event.kind === 'concert'
@@ -166,7 +170,6 @@ function eventRankScore(
     distanceWeight +
     recencyWeight +
     moderationWeight +
-    sceneWeight +
     venueWeight +
     interactionBoost +
     roleWeight +
@@ -188,10 +191,6 @@ function isTonightEvent(event: EventItem, nowMs: number) {
   const threeHours = 3 * 60 * 60 * 1000;
   const oneDay = 24 * 60 * 60 * 1000;
   return diff >= -threeHours && diff <= oneDay;
-}
-
-function sceneLabel(scene: SceneModeId) {
-  return SCENE_MODES.find((item) => item.id === scene)?.label ?? 'Auto';
 }
 
 function stableNoise(seed: string) {
@@ -487,7 +486,6 @@ export function FeedScreen({
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [cycleCount, setCycleCount] = useState(5);
-  const [sceneMode, setSceneMode] = useState<SceneModeId>('auto');
   const [selectedVenue, setSelectedVenue] = useState<string>(ALL_VENUES_KEY);
   const [tonightOnly, setTonightOnly] = useState(true);
   const [feedback, setFeedback] = useState('');
@@ -518,8 +516,6 @@ export function FeedScreen({
     () => buildInteractionProfile(events, interactions),
     [events, interactions],
   );
-  const autoScene = useMemo(() => topSceneFromProfile(interactionProfile), [interactionProfile]);
-  const activeScene = sceneMode === 'auto' && autoScene ? autoScene : sceneMode;
 
   const topVenues = useMemo(() => {
     const radiusMiles = radiusFilter === 'city' ? Infinity : radiusFilter;
@@ -570,7 +566,6 @@ export function FeedScreen({
           user,
           interactions[event.id],
           nowMs,
-          activeScene,
           eventPreferenceBoost(event, interactionProfile),
           selectedVenue,
         ),
@@ -586,17 +581,11 @@ export function FeedScreen({
       : radiusSource;
     const afterTonight = tonightSource.length > 0 ? tonightSource : radiusSource;
 
-    const sceneFiltered =
-      activeScene === 'auto'
-        ? afterTonight
-        : afterTonight.filter((item) => eventMatchesScene(item.event, activeScene));
-    const afterScene = sceneFiltered.length > 0 ? sceneFiltered : afterTonight;
-
     const venueFiltered =
       selectedVenue === ALL_VENUES_KEY
-        ? afterScene
-        : afterScene.filter((item) => item.event.venue === selectedVenue);
-    const source = venueFiltered.length > 0 ? venueFiltered : afterScene;
+        ? afterTonight
+        : afterTonight.filter((item) => item.event.venue === selectedVenue);
+    const source = venueFiltered.length > 0 ? venueFiltered : afterTonight;
 
     const sorted = source.sort((a, b) => {
       if (b.rankScore !== a.rankScore) {
@@ -613,7 +602,6 @@ export function FeedScreen({
     user,
     interactions,
     tonightOnly,
-    activeScene,
     selectedVenue,
     interactionProfile,
   ]);
@@ -628,16 +616,14 @@ export function FeedScreen({
 
   useEffect(() => {
     setCycleCount(5);
-  }, [radiusFilter, rankedEvents.length, sceneMode, selectedVenue, tonightOnly]);
+  }, [radiusFilter, rankedEvents.length, selectedVenue, tonightOnly]);
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScreenBackdrop />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{tonightOnly ? 'Tonight Near You' : 'For You'}</Text>
-        <Text style={styles.headerSub}>
-          Discover - Commit - Coordinate in {user.city} | Scene: {sceneLabel(activeScene)}
-        </Text>
+        <Text style={styles.headerSub}>Discover - Commit - Coordinate in {user.city}</Text>
 
         <View style={styles.modeRow}>
           <View style={styles.modeChip}>
@@ -655,23 +641,6 @@ export function FeedScreen({
           >
             <Text style={styles.modeChipLabel}>{tonightOnly ? 'Tonight On' : 'Tonight Off'}</Text>
           </Pressable>
-        </View>
-
-        <View style={styles.sceneRow}>
-          {SCENE_MODES.map((mode) => {
-            const active = sceneMode === mode.id;
-            return (
-              <Pressable
-                key={mode.id}
-                onPress={() => setSceneMode(mode.id)}
-                style={[styles.sceneChip, active && styles.sceneChipActive]}
-              >
-                <Text style={[styles.sceneLabel, active && styles.sceneLabelActive]}>
-                  {mode.label}
-                </Text>
-              </Pressable>
-            );
-          })}
         </View>
 
         <View style={styles.venueRow}>
@@ -826,33 +795,6 @@ const createStyles = (theme: ThemePalette) =>
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
-  },
-  sceneRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  sceneChip: {
-    borderWidth: 1,
-    borderColor: '#ffffff21',
-    backgroundColor: '#ffffff09',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  sceneChipActive: {
-    borderColor: theme.primary,
-    backgroundColor: theme.primary,
-  },
-  sceneLabel: {
-    color: theme.textMuted,
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  sceneLabelActive: {
-    color: theme.text,
   },
   venueRow: {
     flexDirection: 'row',

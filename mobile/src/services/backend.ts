@@ -2,6 +2,7 @@ import { AUSTIN_EVENTS } from '../mockData';
 import { milesBetweenPoints } from '../geo';
 import { supabase } from '../lib/supabase';
 import { formatDateLabel, formatTimeRangeLabel } from '../time';
+import { buildCanonicalEventTags, buildDraftTags } from '../discovery';
 import {
   EntityKind,
   EntityPageData,
@@ -236,7 +237,16 @@ function eventFromRow(
     priceLabel: row.price_label,
     category: row.category,
     ageRating: row.age_rating,
-    tags: row.tags ?? [],
+    tags: buildCanonicalEventTags({
+      title: row.title,
+      description: row.description,
+      category: row.category,
+      subcategory: row.subcategory,
+      kind: row.kind,
+      venue: row.venue,
+      promoter: row.promoter,
+      tags: row.tags ?? [],
+    }),
     description: row.description,
     ticketUrl: row.ticket_url,
     flyerImageUrl: row.flyer_image_url,
@@ -678,6 +688,7 @@ export async function saveInteraction(userId: string, eventId: string, intent: I
 
 export async function createEventSubmission(userId: string, role: UserRole, draft: EventDraft) {
   const moderation = evaluateFlyerDraft(draft);
+  const normalizedTags = buildDraftTags(draft);
 
   const eventInsert = {
     title: draft.title,
@@ -696,7 +707,7 @@ export async function createEventSubmission(userId: string, role: UserRole, draf
     kind: draft.kind,
     subcategory: draft.subcategory,
     age_rating: draft.ageRating,
-    tags: draft.tags,
+    tags: normalizedTags,
     price_label: draft.priceLabel,
     ticket_url: draft.ticketUrl,
     flyer_image_url: draft.flyerImageUrl,
@@ -743,7 +754,7 @@ export async function createEventSubmission(userId: string, role: UserRole, draf
       priceLabel: draft.priceLabel,
       category: draft.category,
       ageRating: draft.ageRating,
-      tags: draft.tags,
+      tags: normalizedTags,
       description: draft.description,
       ticketUrl: draft.ticketUrl,
       flyerImageUrl: draft.flyerImageUrl,
