@@ -13,6 +13,7 @@ import {
   InteractionMap,
   IntentState,
   ModerationStatus,
+  ProfileVisibility,
   ReportReason,
   StoredIntentState,
   UserRole,
@@ -21,6 +22,9 @@ import {
 import { evaluateFlyerDraft } from './moderation';
 
 const AUSTIN_CENTER = { latitude: 30.2672, longitude: -97.7431 };
+const META_PROFILE_VISIBILITY_KEY = '__profile_visibility';
+const META_SHOW_INTERESTED_KEY = '__profile_show_interested';
+const META_PUBLIC_INTERESTED_IDS_KEY = '__profile_public_interested_ids';
 
 type EventRow = {
   id: string;
@@ -120,6 +124,38 @@ function normalizeHandle(name: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 40);
+}
+
+function parseProfileMeta(tasteAnswers: Record<string, string> | null | undefined) {
+  const source = tasteAnswers ?? {};
+  const visibility: ProfileVisibility =
+    source[META_PROFILE_VISIBILITY_KEY] === 'private' ? 'private' : 'public';
+  const showInterested = source[META_SHOW_INTERESTED_KEY] !== 'false';
+  const publicInterestedEventIds = (source[META_PUBLIC_INTERESTED_IDS_KEY] ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  const cleanTasteAnswers: Record<string, string> = { ...source };
+  delete cleanTasteAnswers[META_PROFILE_VISIBILITY_KEY];
+  delete cleanTasteAnswers[META_SHOW_INTERESTED_KEY];
+  delete cleanTasteAnswers[META_PUBLIC_INTERESTED_IDS_KEY];
+
+  return {
+    visibility,
+    showInterested,
+    publicInterestedEventIds,
+    cleanTasteAnswers,
+  };
+}
+
+function withProfileMeta(user: UserSetup) {
+  return {
+    ...user.tasteAnswers,
+    [META_PROFILE_VISIBILITY_KEY]: user.profileVisibility,
+    [META_SHOW_INTERESTED_KEY]: user.showInterestedOnProfile ? 'true' : 'false',
+    [META_PUBLIC_INTERESTED_IDS_KEY]: user.publicInterestedEventIds.join(','),
+  };
 }
 
 function shouldAutoPublic(kind: EntityKind, requestedPublic: boolean) {
@@ -386,6 +422,8 @@ export async function fetchProfile(userId: string): Promise<UserSetup | null> {
     return null;
   }
 
+  const profileMeta = parseProfileMeta(data.taste_answers);
+
   return {
     id: data.id,
     email: data.email ?? '',
@@ -394,7 +432,10 @@ export async function fetchProfile(userId: string): Promise<UserSetup | null> {
     city: data.city ?? 'Austin, TX',
     interests: data.interests ?? [],
     role: data.role ?? 'event_enjoyer',
-    tasteAnswers: data.taste_answers ?? {},
+    tasteAnswers: profileMeta.cleanTasteAnswers,
+    profileVisibility: profileMeta.visibility,
+    showInterestedOnProfile: profileMeta.showInterested,
+    publicInterestedEventIds: profileMeta.publicInterestedEventIds,
   };
 }
 
@@ -412,7 +453,7 @@ export async function upsertProfile(userId: string, profile: UserSetup) {
       city: profile.city,
       interests: profile.interests,
       role: profile.role,
-      taste_answers: profile.tasteAnswers,
+      taste_answers: withProfileMeta(profile),
     },
     { onConflict: 'id' },
   );

@@ -44,6 +44,7 @@ import { theme } from './src/theme';
 import {
   DirectInboxData,
   EventTasteAnswers,
+  FollowRequest,
   InteractionMap,
   IntentState,
   RadiusFilter,
@@ -134,6 +135,20 @@ export default function App() {
   const [userLocation, setUserLocation] = useState<UserLocation>(AUSTIN_CENTER);
   const [blockedUserIds, setBlockedUserIds] = useState<string[]>([]);
   const [interactions, setInteractions] = useState<InteractionMap>({});
+  const [followRequests, setFollowRequests] = useState<FollowRequest[]>([
+    {
+      id: 'follow_req_1',
+      requesterId: 'usr_noise_kid',
+      requesterName: 'Noise Kid',
+      requesterHandle: '@noise.kid',
+    },
+    {
+      id: 'follow_req_2',
+      requesterId: 'usr_filmclub_ana',
+      requesterName: 'Ana Filmclub',
+      requesterHandle: '@ana.filmclub',
+    },
+  ]);
   const [directInbox, setDirectInbox] = useState<DirectInboxData>({ threads: [], messages: [] });
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [pendingDmFlyerEventId, setPendingDmFlyerEventId] = useState<string | null>(null);
@@ -324,6 +339,19 @@ export default function App() {
   const updateIntent = async (eventId: string, intent: IntentState) => {
     const event = knownEvents.find((item) => item.id === eventId);
     setInteractions((prev) => setIntentInMap(prev, eventId, intent));
+    setUser((prev) => {
+      const withoutEvent = prev.publicInterestedEventIds.filter((id) => id !== eventId);
+      if (intent === 'interested') {
+        return {
+          ...prev,
+          publicInterestedEventIds: [...withoutEvent, eventId],
+        };
+      }
+      return {
+        ...prev,
+        publicInterestedEventIds: withoutEvent,
+      };
+    });
     await saveInteraction(authUserId, eventId, intent);
     if (event) {
       await scheduleEventReminders(event, intent);
@@ -353,6 +381,32 @@ export default function App() {
     if (intent === 'saved') {
       trackEvent(authUserId, 'saved_clicked', { eventId });
     }
+  };
+
+  const onUpdateProfilePrivacy = (patch: {
+    profileVisibility?: 'public' | 'private';
+    showInterestedOnProfile?: boolean;
+  }) => {
+    setUser((prev) => ({
+      ...prev,
+      profileVisibility: patch.profileVisibility ?? prev.profileVisibility,
+      showInterestedOnProfile: patch.showInterestedOnProfile ?? prev.showInterestedOnProfile,
+    }));
+  };
+
+  const onSetInterestedVisibility = (eventId: string, visible: boolean) => {
+    setUser((prev) => {
+      const nextIds = prev.publicInterestedEventIds.filter((id) => id !== eventId);
+      return {
+        ...prev,
+        publicInterestedEventIds: visible ? [...nextIds, eventId] : nextIds,
+      };
+    });
+  };
+
+  const onRespondFollowRequest = (requestId: string, action: 'approve' | 'decline') => {
+    setFollowRequests((prev) => prev.filter((item) => item.id !== requestId));
+    trackEvent(authUserId, 'profile_follow_request_action', { requestId, action });
   };
 
   const onOpenEvent = (eventId: string) => {
@@ -628,8 +682,12 @@ export default function App() {
             user={user}
             events={events}
             interactions={interactions}
+            followRequests={followRequests}
             onOpenEvent={onOpenEvent}
             onSetIntent={onSetIntent}
+            onUpdateProfilePrivacy={onUpdateProfilePrivacy}
+            onSetInterestedVisibility={onSetInterestedVisibility}
+            onRespondFollowRequest={onRespondFollowRequest}
           />
         )}
       </View>

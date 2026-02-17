@@ -5,6 +5,7 @@ export type StoredIntentState = 'interested' | 'going' | 'saved';
 export type ModerationStatus = 'accepted' | 'review' | 'rejected';
 export type RadiusFilter = 2 | 5 | 10 | 'city';
 export type EntityKind = 'band' | 'person' | 'promoter' | 'venue' | 'collective';
+export type ProfileVisibility = 'public' | 'private';
 
 export type IntentFilter = 'Interested' | 'Going' | 'Saved';
 
@@ -61,6 +62,9 @@ export interface UserSetup {
   interests: string[];
   role: UserRole;
   tasteAnswers: EventTasteAnswers;
+  profileVisibility: ProfileVisibility;
+  showInterestedOnProfile: boolean;
+  publicInterestedEventIds: string[];
 }
 
 export interface UserLocation {
@@ -163,4 +167,11 @@ export interface DirectMessageItem {
 export interface DirectInboxData {
   threads: DirectMessageThread[];
   messages: DirectMessageItem[];
+}
+
+export interface FollowRequest {
+  id: string;
+  requesterId: string;
+  requesterName: string;
+  requesterHandle: string;
 }

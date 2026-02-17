@@ -15,7 +15,8 @@ export type AnalyticsEventName =
   | 'calendar_added'
   | 'radius_changed'
   | 'dm_flyer_intent'
-  | 'dm_sent';
+  | 'dm_sent'
+  | 'profile_follow_request_action';
 
 export function trackEvent(
   userId: string,

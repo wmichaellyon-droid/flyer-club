@@ -16,6 +16,9 @@ export const DEFAULT_USER: UserSetup = {
   interests: ['DIY', 'Film'],
   role: 'event_enjoyer',
   tasteAnswers: {},
+  profileVisibility: 'public',
+  showInterestedOnProfile: true,
+  publicInterestedEventIds: [],
 };
 
 export const PROFILE_ROLES: { id: UserRole; title: string; description: string }[] = [
