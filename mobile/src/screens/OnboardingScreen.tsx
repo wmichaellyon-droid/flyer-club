@@ -1,0 +1,157 @@
+import { useMemo, useState } from 'react';
+import { Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AVAILABLE_INTERESTS, DEFAULT_USER } from '../mockData';
+import { theme } from '../theme';
+
+interface OnboardingScreenProps {
+  onComplete: (city: string, interests: string[]) => void;
+}
+
+export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
+  const [city, setCity] = useState(DEFAULT_USER.city);
+  const [selected, setSelected] = useState<string[]>(DEFAULT_USER.interests);
+
+  const canContinue = useMemo(() => city.trim().length > 0 && selected.length > 0, [city, selected]);
+
+  const toggleInterest = (interest: string) => {
+    setSelected((prev) =>
+      prev.includes(interest) ? prev.filter((item) => item !== interest) : [...prev, interest],
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.container}>
+        <Text style={styles.kicker}>Flyer Club</Text>
+        <Text style={styles.title}>Find Austin events worth showing up for.</Text>
+        <Text style={styles.subtitle}>Local-first flyer feed. Real intent. Real attendance.</Text>
+
+        <View style={styles.block}>
+          <Text style={styles.label}>City</Text>
+          <TextInput
+            value={city}
+            onChangeText={setCity}
+            placeholder="Austin, TX"
+            placeholderTextColor={theme.textMuted}
+            style={styles.input}
+          />
+        </View>
+
+        <View style={styles.block}>
+          <Text style={styles.label}>Pick your interests</Text>
+          <View style={styles.chips}>
+            {AVAILABLE_INTERESTS.map((interest) => {
+              const active = selected.includes(interest);
+              return (
+                <Pressable
+                  key={interest}
+                  onPress={() => toggleInterest(interest)}
+                  style={[styles.chip, active && styles.chipActive]}
+                >
+                  <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{interest}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <Pressable
+          onPress={() => onComplete(city.trim(), selected)}
+          disabled={!canContinue}
+          style={[styles.cta, !canContinue && styles.ctaDisabled]}
+        >
+          <Text style={styles.ctaLabel}>Continue</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: theme.bg,
+  },
+  container: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+    gap: 20,
+  },
+  kicker: {
+    color: theme.primary,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    fontSize: 12,
+  },
+  title: {
+    color: theme.text,
+    fontWeight: '800',
+    fontSize: 30,
+    lineHeight: 36,
+  },
+  subtitle: {
+    color: theme.textMuted,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  block: {
+    gap: 12,
+  },
+  label: {
+    color: theme.text,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  input: {
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 12,
+    color: theme.text,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+  },
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  chipActive: {
+    borderColor: theme.primary,
+    backgroundColor: theme.primary,
+  },
+  chipLabel: {
+    color: theme.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  chipLabelActive: {
+    color: theme.text,
+  },
+  cta: {
+    marginTop: 8,
+    backgroundColor: theme.primary,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  ctaDisabled: {
+    opacity: 0.4,
+  },
+  ctaLabel: {
+    color: theme.text,
+    fontWeight: '700',
+    fontSize: 16,
+  },
+});

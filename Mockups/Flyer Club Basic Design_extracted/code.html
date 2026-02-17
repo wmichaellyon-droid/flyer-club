@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Flyer Club - Event Details</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#a60df2",
+                        "background-light": "#f7f5f8",
+                        "background-dark": "#1c1022",
+                        "neutral-surface": "#2d2434", // A slightly lighter shade derived from the dark background
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        /* Custom scrollbar hiding for a clean mobile look */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-gray-900 dark:text-white antialiased selection:bg-primary selection:text-white pb-24">
+<!-- Header / Hero Section -->
+<div class="relative w-full h-[60vh] overflow-hidden rounded-b-xl">
+<!-- Blurred Background for varying aspect ratios -->
+<div class="absolute inset-0 bg-cover bg-center blur-2xl opacity-50 scale-110" data-alt="Abstract neon club lights blurred background" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA1f9gsSpDRQalNK7oIGjdyIHqeVWRRkyl5MuBHTHZPdX1LAmTpStjFOELLsyZXvdBIw2ccS0WF39sXNytZSTD7evSTfBfZW21jTp2NRPu3ELn7FZ9RdYiYJ_Oes1PbrZNZfym16Cl6ChUH14oT7z9pscPA8Lg2nnqS_yhlXcrvetuMdPEue73KkVnojWlLgV8nAwC9qcsZzs9IZ5abR1Kxy9tlj_Exe0cDsU_1Xl179KoNpv_VHEBxMpP8Tt0jAeVs2jEHTaRqhR4');">
+</div>
+<!-- Main Flyer Image -->
+<img alt="Neon Jungle Night Event Flyer" class="absolute inset-0 w-full h-full object-cover object-center z-0" data-alt="Vibrant cyberpunk style event flyer with neon colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAT4nwk4SONdC6Jep8Cw9pDH-lLvLS04jykAU1X1esi4gbCIl_7Cww3s0sw-ZJPwfMg9_yh88lGDmvsZImM3pn7G2uu86pnTbRcUfO6_R3Bk7nzCDZvJ84BozXSBzpipLIgQQQ6xU9tMgzqSiMipkTpthObjKAlpzQ2VEI7mOCpEj5-M-cP-AbWsNm6W1OpbOA-RJwn11FON5nkARkreXmZRVhHvm_Tx6Nate-s_o1RyPWSRx4HSBovCi20SdcqMX0JVJzomUYkaQk"/>
+<!-- Gradient Overlay for Text Readability -->
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark via-transparent to-black/60 z-10"></div>
+<!-- Navigation Bar -->
+<div class="absolute top-0 left-0 right-0 z-50 p-4 pt-8 flex justify-between items-center">
+<button class="flex items-center justify-center w-10 h-10 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-white hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex gap-3">
+<button class="flex items-center justify-center w-10 h-10 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-white hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+<button class="flex items-center justify-center w-10 h-10 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-white hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined">ios_share</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Main Content Container -->
+<div class="relative z-20 -mt-16 px-4 flex flex-col gap-6">
+<!-- Title Block -->
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2 mb-2">
+<span class="px-3 py-1 bg-primary/20 backdrop-blur-md border border-primary/30 text-primary text-xs font-bold rounded-full uppercase tracking-wider">Club Night</span>
+<span class="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/10 text-white/80 text-xs font-bold rounded-full uppercase tracking-wider">21+</span>
+</div>
+<h1 class="text-3xl md:text-4xl font-extrabold text-white leading-tight shadow-black drop-shadow-lg">Neon Jungle Night</h1>
+<p class="text-white/80 text-sm font-medium drop-shadow-md mt-1">Presented by Electric Ave Productions</p>
+</div>
+<!-- Event Details Card -->
+<div class="bg-neutral-surface dark:bg-[#26172e] rounded-xl p-5 shadow-xl border border-white/5 flex flex-col gap-4">
+<!-- Date & Time -->
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary">
+<span class="material-symbols-outlined">calendar_month</span>
+</div>
+<div>
+<h3 class="font-bold text-lg text-white">Fri, Oct 20</h3>
+<p class="text-white/60 text-sm">9:00 PM - 3:00 AM</p>
+<button class="text-primary text-xs font-bold mt-1 hover:underline">Add to Calendar</button>
+</div>
+</div>
+<div class="h-px bg-white/5 w-full"></div>
+<!-- Location -->
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary">
+<span class="material-symbols-outlined">location_on</span>
+</div>
+<div class="flex-1">
+<h3 class="font-bold text-lg text-white">Empire Control Room</h3>
+<p class="text-white/60 text-sm">606 E 7th St, Red River District</p>
+<p class="text-white/40 text-xs mt-0.5">Austin, TX</p>
+</div>
+<button class="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/80 shrink-0 border border-white/5">
+<span class="material-symbols-outlined" style="font-size: 20px;">near_me</span>
+</button>
+</div>
+<!-- Mini Map Preview -->
+<div class="w-full h-32 rounded-lg mt-1 overflow-hidden relative">
+<img alt="Map showing location in Austin" class="w-full h-full object-cover opacity-60 grayscale hover:grayscale-0 transition-all duration-300" data-location="Austin" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAM2a1t_fXGMZ7K9z-3a5wWo90kH8o0o5m2vBVTpn4MZ9Txk2EJzb2LBjBLW6R6Gu94bBFyfgivt3Beiw7jA-Aiqv9efdj6GQhRC62oJA9Xkb7qj65aa_me3rosHY1RWAbiKKoJV-2eesV6kMsynZid_F16B5VQHa8SyMI_Vt1B9BriUQsCm96aXXVbX7VzlaIr6FzOapmZYSQzkOKIPs-AeGFSES9YEQlbYOJeR52j07PcRN7ovvLNJH6F04iHVoHY1UgowG5nTq0"/>
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/50 animate-bounce">
+<span class="material-symbols-outlined text-sm">location_on</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Social Proof / Engagement -->
+<div class="flex gap-3">
+<button class="flex-1 bg-primary text-white py-3 rounded-full font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform">
+<span class="material-symbols-outlined fill-current" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                Going <span class="bg-white/20 px-1.5 py-0.5 rounded-full text-xs">124</span>
+</button>
+<button class="flex-1 bg-neutral-surface border border-white/10 text-white py-3 rounded-full font-bold text-sm flex items-center justify-center gap-2 hover:bg-white/5 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">star</span>
+                Interested <span class="bg-white/10 px-1.5 py-0.5 rounded-full text-xs text-white/60">458</span>
+</button>
+</div>
+<!-- Lineup / Artists -->
+<div class="flex flex-col gap-3">
+<div class="flex justify-between items-end">
+<h2 class="text-xl font-bold text-white">Lineup</h2>
+<a class="text-primary text-sm font-bold" href="#">See All</a>
+</div>
+<div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+<!-- Artist 1 -->
+<div class="flex flex-col items-center gap-2 min-w-[80px]">
+<div class="w-20 h-20 rounded-full p-1 border-2 border-primary/50">
+<img alt="DJ Phantom profile" class="w-full h-full rounded-full object-cover" data-alt="Close up portrait of a DJ" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSdnne3Vgs4YeWCi27POKJvjP_IXwaVlSl3ethda4ZkYOqsrdWe2vSBaqpCMqDUiivlpa8Wy9EcJxuORMbP5J0fx-zpkzCSoRr_mmFqlcFcIiwzPqA4bX5FOvfV5A9RsqTp2-FbffSe8JOy5ddeCqk6wBuWDbyZMwGsma9Kq0WLJtaJdc9iVBc6sKh4g4w0Uo-KZk1RQG8XtT5vsVbNTjngp27xIIUpiIOrT_tmXK3TwvBjrw2kZOdP_MF9aM6f_CodbJnIi3Kwjw"/>
+</div>
+<span class="text-sm font-medium text-white text-center truncate w-full">DJ Phantom</span>
+</div>
+<!-- Artist 2 -->
+<div class="flex flex-col items-center gap-2 min-w-[80px]">
+<div class="w-20 h-20 rounded-full p-1 border-2 border-white/10">
+<img alt="Neon Vibe profile" class="w-full h-full rounded-full object-cover" data-alt="Portrait of a female singer with vibrant hair" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEZfl_XPfqdOZV66irQMAG5aIiqSo5ZYA6Mp8T1nIvLUHV4WzR915yRVf82LkGejuC_Wv5uoyVsqaScTiR_Lr0OldjvDKiAr-ugglIj7fE7zfsoEOHbYgNjDrAkSbZHT2Uyvt9qeEzKDb-SycAgBf4nW1gnqIcOwD1icsnOXuroJtqQElanenv0dz1iLWwCqutLslEOkpklrJOGf2P3sG9hDirk58qlc2ahOV6GysYbVkdcfhW5kcaHJf3AoR2KViZbb9KG4oTR6s"/>
+</div>
+<span class="text-sm font-medium text-white text-center truncate w-full">Neon Vibe</span>
+</div>
+<!-- Artist 3 -->
+<div class="flex flex-col items-center gap-2 min-w-[80px]">
+<div class="w-20 h-20 rounded-full p-1 border-2 border-white/10">
+<img alt="The Synths profile" class="w-full h-full rounded-full object-cover" data-alt="Portrait of a male musician looking away" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6W0OHQL5yCqnblT9KhHWs8dB_mvQbD7uFWG4bMkV52X88-Ub8s0MyfoEQyRJMBlRV_o83oeC1uiCmgbTs4AslwT7Y30XgE4eB_7nNNqbpLzbqqJrSQ4eakmksxcJL3ePYzdIgousRiIrVJj3GpVoZloSFjESZmlateAvj1OAzjMTlhPugTiI_1WEv5NtBzvSL-JgWQOycKoiNf_YHBLtYDdj4MkNGJ7eEaxgHqrSbx6EnJlNIVUe2gdtDVmF-uYXIxX8TB0ZoPRU"/>
+</div>
+<span class="text-sm font-medium text-white text-center truncate w-full">The Synths</span>
+</div>
+<!-- Artist 4 -->
+<div class="flex flex-col items-center gap-2 min-w-[80px]">
+<div class="w-20 h-20 rounded-full p-1 border-2 border-white/10">
+<img alt="Bass Kween profile" class="w-full h-full rounded-full object-cover" data-alt="Portrait of a female DJ with headphones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAP9mKXJ06S33NjPihz-DDnfCZYhWb_ZlQh8UqOpXWXaoUYWDAXU1J4-5ZPTt2P5ktnE0ICf8Cbgahqc460qIGDxFo8u6Th3De5isxq9vCiFpTCi4lVi-D6L4aFiY4VixAJjcMCeAyTg7xF2dvyjfgQ2TeCc1E895zAKKEfFMmzPYZH_dla1R4xjP6xOAHgK3AOO4AvYI-ChpG24Yf0x4TRJt9u7bQUZ6d4q2pO7K_FXHJHa5ZRcFcj_wwWvsxHsVL-92PSUqklFYc"/>
+</div>
+<span class="text-sm font-medium text-white text-center truncate w-full">Bass Kween</span>
+</div>
+</div>
+</div>
+<!-- About Section -->
+<div class="flex flex-col gap-2 pb-6">
+<h2 class="text-xl font-bold text-white">About the Event</h2>
+<p class="text-white/70 leading-relaxed text-sm">
+                Get ready for an electrifying night at Empire Control Room! The Neon Jungle brings the wildest beats from the underground scene straight to Austin's Red River District. Expect immersive laser shows, heavy bass, and a vibe you won't find anywhere else. Costumes encouraged.
+            </p>
+<div class="flex flex-wrap gap-2 mt-2">
+<span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-white/60">Techno</span>
+<span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-white/60">House</span>
+<span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-white/60">Live Visuals</span>
+</div>
+</div>
+</div>
+<!-- Sticky Footer CTA -->
+<div class="fixed bottom-0 left-0 right-0 p-4 bg-background-dark/80 backdrop-blur-xl border-t border-white/10 z-50 flex items-center justify-between gap-4">
+<div class="flex flex-col">
+<span class="text-white/60 text-xs uppercase font-bold tracking-wider">Starting at</span>
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-bold text-white">$25</span>
+<span class="text-xs text-white/60">+ fees</span>
+</div>
+</div>
+<button class="flex-1 bg-primary hover:bg-primary/90 text-white h-12 rounded-full font-bold text-base flex items-center justify-center shadow-[0_0_20px_rgba(166,13,242,0.4)] transition-all active:scale-[0.98]">
+            Get Tickets
+        </button>
+</div>
+</body></html>
