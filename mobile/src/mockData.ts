@@ -1,9 +1,13 @@
-import { EventItem, UserRole, UserSetup } from './types';
+import { EventItem, EventTasteQuestion, UserRole, UserSetup } from './types';
 
 export const DEFAULT_USER: UserSetup = {
+  email: '',
+  profileName: '',
+  profileImageUrl: '',
   city: 'Austin, TX',
   interests: ['DIY', 'Film'],
   role: 'event_enjoyer',
+  tasteAnswers: {},
 };
 
 export const PROFILE_ROLES: { id: UserRole; title: string; description: string }[] = [
@@ -34,6 +38,34 @@ export const AVAILABLE_INTERESTS = [
 ];
 
 export const EXPLORE_FILTERS = ['Tonight', 'This Weekend', 'Free', 'All Ages', 'DIY'];
+
+export const LOGIN_QUESTIONS: EventTasteQuestion[] = [
+  {
+    id: 'event_type',
+    prompt: 'Which events do you check first?',
+    options: ['Concerts', 'Film screenings', 'Community meetups', 'DIY arts'],
+  },
+  {
+    id: 'vibe',
+    prompt: 'What vibe are you usually looking for?',
+    options: ['Loud and energetic', 'Creative and artsy', 'Low-key and social', 'Open to anything'],
+  },
+  {
+    id: 'frequency',
+    prompt: 'How often do you usually go out?',
+    options: ['1-2 times a month', 'Weekly', '2-3 times a week', 'Only special events'],
+  },
+  {
+    id: 'budget',
+    prompt: 'What is your usual ticket budget?',
+    options: ['Free only', 'Under $20', '$20-$40', 'No strong preference'],
+  },
+  {
+    id: 'distance',
+    prompt: 'How far are you willing to travel for an event?',
+    options: ['Within 3 miles', 'Up to 10 miles', 'Across Austin', 'Wherever the scene is'],
+  },
+];
 
 export const AUSTIN_EVENTS: EventItem[] = [
   {

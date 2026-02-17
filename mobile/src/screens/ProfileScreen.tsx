@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { theme } from '../theme';
 import { EventItem, InteractionMap, IntentFilter, UserRole, UserSetup } from '../types';
 
@@ -24,6 +24,15 @@ function roleLabel(role: UserRole) {
   return 'Event Enjoyer';
 }
 
+function handleFromName(name: string) {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/^\.|\.$/g, '');
+  return slug.length > 0 ? `@${slug}` : '@profile';
+}
+
 export function ProfileScreen({ user, events, interactions, onOpenEvent, onSetIntent }: ProfileScreenProps) {
   const [activeTab, setActiveTab] = useState<IntentFilter>('Interested');
   const isPromoter = user.role === 'promoter';
@@ -42,8 +51,22 @@ export function ProfileScreen({ user, events, interactions, onOpenEvent, onSetIn
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
         <Text style={styles.title}>Profile</Text>
-        <Text style={styles.handle}>@austin.scenes</Text>
-        <Text style={styles.city}>{user.city}</Text>
+        <View style={styles.identityRow}>
+          {user.profileImageUrl ? (
+            <Image source={{ uri: user.profileImageUrl }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text style={styles.avatarInitial}>
+                {(user.profileName.trim()[0] ?? 'U').toUpperCase()}
+              </Text>
+            </View>
+          )}
+          <View style={styles.identityText}>
+            <Text style={styles.handle}>{handleFromName(user.profileName)}</Text>
+            <Text style={styles.city}>{user.city}</Text>
+            <Text style={styles.email}>{user.email}</Text>
+          </View>
+        </View>
         <Text style={styles.roleBadge}>{roleLabel(user.role)}</Text>
         <Text style={styles.communityHint}>Community posting is open to everyone in Upload.</Text>
 
@@ -171,9 +194,44 @@ const styles = StyleSheet.create({
     color: theme.text,
     fontWeight: '700',
   },
+  identityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 2,
+  },
+  identityText: {
+    gap: 2,
+  },
+  avatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.border,
+  },
+  avatarFallback: {
+    width: 44,
+    height: 44,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.primary,
+    backgroundColor: theme.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: {
+    color: theme.text,
+    fontSize: 17,
+    fontWeight: '800',
+  },
   city: {
     color: theme.textMuted,
     fontSize: 12,
+  },
+  email: {
+    color: theme.textMuted,
+    fontSize: 11,
   },
   roleBadge: {
     alignSelf: 'flex-start',

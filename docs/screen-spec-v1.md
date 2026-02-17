@@ -1,5 +1,34 @@
 # Flyer Club Screen Spec v1 (MVP)
 
+## 0. Login
+
+Goal:
+- Capture required identity and event-taste signals before app setup.
+
+Key UI blocks:
+- Required email field.
+- Required profile name field.
+- Optional profile photo URL field.
+- 5-question event taste quiz.
+- Continue CTA (disabled until required fields + all questions are complete).
+
+Primary actions:
+- Complete required fields
+- Answer all event taste questions
+- Continue to onboarding
+
+Data required:
+- email
+- profile name
+- optional profile photo
+- taste quiz answers
+
+Analytics events:
+- `login_started`
+- `login_identity_completed`
+- `taste_quiz_completed`
+- `login_completed`
+
 ## 1. Onboarding
 
 Goal:

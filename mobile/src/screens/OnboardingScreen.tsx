@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { AVAILABLE_INTERESTS, DEFAULT_USER, PROFILE_ROLES } from '../mockData';
+import { AVAILABLE_INTERESTS, PROFILE_ROLES } from '../mockData';
 import { theme } from '../theme';
-import { UserRole } from '../types';
+import { UserRole, UserSetup } from '../types';
 
 interface OnboardingScreenProps {
+  initialUser: UserSetup;
   onComplete: (city: string, interests: string[], role: UserRole) => void;
 }
 
-export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
-  const [city, setCity] = useState(DEFAULT_USER.city);
-  const [selected, setSelected] = useState<string[]>(DEFAULT_USER.interests);
-  const [role, setRole] = useState<UserRole>(DEFAULT_USER.role);
+export function OnboardingScreen({ initialUser, onComplete }: OnboardingScreenProps) {
+  const [city, setCity] = useState(initialUser.city);
+  const [selected, setSelected] = useState<string[]>(initialUser.interests);
+  const [role, setRole] = useState<UserRole>(initialUser.role);
 
   const canContinue = useMemo(
     () => city.trim().length > 0 && selected.length > 0 && !!role,

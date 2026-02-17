@@ -16,6 +16,9 @@
 5. Upload
 6. Profile
 
+Pre-app gate:
+- Required login screen before onboarding (`email`, `profile name`, optional profile photo, event taste quiz).
+
 Bottom navigation for MVP: `Feed`, `Explore`, `Upload`, `Profile`.
 
 ## 3. Core Actions (Locked)

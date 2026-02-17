@@ -6,6 +6,13 @@ export type IntentFilter = 'Interested' | 'Going' | 'Saved';
 
 export type UserRole = 'concert_lover' | 'event_enjoyer' | 'promoter';
 export type EventKind = 'concert' | 'film' | 'meetup' | 'comedy' | 'arts';
+export type EventTasteAnswers = Record<string, string>;
+
+export interface EventTasteQuestion {
+  id: string;
+  prompt: string;
+  options: string[];
+}
 
 export interface EventItem {
   id: string;
@@ -34,9 +41,13 @@ export interface EventItem {
 }
 
 export interface UserSetup {
+  email: string;
+  profileName: string;
+  profileImageUrl: string;
   city: string;
   interests: string[];
   role: UserRole;
+  tasteAnswers: EventTasteAnswers;
 }
 
 export type InteractionMap = Record<string, IntentState>;

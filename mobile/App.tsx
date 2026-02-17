@@ -6,11 +6,12 @@ import { AUSTIN_EVENTS, DEFAULT_USER } from './src/mockData';
 import { EventDetailScreen } from './src/screens/EventDetailScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { FeedScreen } from './src/screens/FeedScreen';
+import { LoginScreen } from './src/screens/LoginScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { UploadScreen } from './src/screens/UploadScreen';
 import { theme } from './src/theme';
-import { InteractionMap, IntentState, TabKey, UserSetup } from './src/types';
+import { EventTasteAnswers, InteractionMap, IntentState, TabKey, UserSetup } from './src/types';
 
 function setIntentInMap(
   current: InteractionMap,
@@ -26,7 +27,37 @@ function setIntentInMap(
   return next;
 }
 
+function inferInterestsFromAnswers(answers: EventTasteAnswers) {
+  const joined = Object.values(answers).join(' ').toLowerCase();
+  const inferred = new Set<string>();
+
+  if (joined.includes('concert') || joined.includes('loud')) {
+    inferred.add('Nightlife');
+  }
+  if (joined.includes('film')) {
+    inferred.add('Film');
+  }
+  if (joined.includes('community') || joined.includes('social')) {
+    inferred.add('Community');
+  }
+  if (joined.includes('diy') || joined.includes('artsy')) {
+    inferred.add('DIY');
+    inferred.add('Zines');
+  }
+  if (joined.includes('free')) {
+    inferred.add('Community');
+  }
+
+  if (inferred.size === 0) {
+    inferred.add('DIY');
+    inferred.add('Film');
+  }
+
+  return Array.from(inferred);
+}
+
 export default function App() {
+  const [loginComplete, setLoginComplete] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('Feed');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -64,13 +95,35 @@ export default function App() {
     setSelectedEventId(eventId);
   };
 
+  if (!loginComplete) {
+    return (
+      <>
+        <StatusBar style="light" />
+        <LoginScreen
+          onComplete={({ email, profileName, profileImageUrl, tasteAnswers }) => {
+            setUser((prev) => ({
+              ...prev,
+              email,
+              profileName,
+              profileImageUrl,
+              tasteAnswers,
+              interests: inferInterestsFromAnswers(tasteAnswers),
+            }));
+            setLoginComplete(true);
+          }}
+        />
+      </>
+    );
+  }
+
   if (!onboardingComplete) {
     return (
       <>
         <StatusBar style="light" />
         <OnboardingScreen
+          initialUser={user}
           onComplete={(city, interests, role) => {
-            setUser({ city, interests, role });
+            setUser((prev) => ({ ...prev, city, interests, role }));
             setOnboardingComplete(true);
           }}
         />
