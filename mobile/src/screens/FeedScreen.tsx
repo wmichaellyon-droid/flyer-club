@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   ImageBackground,
+  Image,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -49,6 +52,7 @@ interface FeedRow {
 
 const radiusOptions: RadiusFilter[] = [2, 5, 10, 'city'];
 const ALL_VENUES_KEY = '__all_venues__';
+const FLYER_CLUB_LOGO = require('../../assets/brand/flyer-club-logo.png');
 
 function normalizeText(value: string) {
   return value.toLowerCase();
@@ -488,11 +492,13 @@ export function FeedScreen({
   const [cycleCount, setCycleCount] = useState(5);
   const [selectedVenue, setSelectedVenue] = useState<string>(ALL_VENUES_KEY);
   const [tonightOnly, setTonightOnly] = useState(true);
+  const [showHeaderLogo, setShowHeaderLogo] = useState(true);
   const [feedback, setFeedback] = useState('');
   const { width } = useWindowDimensions();
   const flyerHeight = Math.round(width * 1.25);
   const seenImpressions = useRef(new Set<string>());
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const logoVisibleRef = useRef(true);
 
   const showFeedback = (message: string) => {
     setFeedback(message);
@@ -502,6 +508,15 @@ export function FeedScreen({
     feedbackTimer.current = setTimeout(() => {
       setFeedback('');
     }, 1100);
+  };
+
+  const onFeedScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = event.nativeEvent.contentOffset.y;
+    const shouldShow = y <= 10;
+    if (logoVisibleRef.current !== shouldShow) {
+      logoVisibleRef.current = shouldShow;
+      setShowHeaderLogo(shouldShow);
+    }
   };
 
   useEffect(() => {
@@ -622,6 +637,9 @@ export function FeedScreen({
     <SafeAreaView style={styles.safe}>
       <ScreenBackdrop />
       <View style={styles.header}>
+        {showHeaderLogo && (
+          <Image source={FLYER_CLUB_LOGO} resizeMode="contain" style={styles.headerLogo} />
+        )}
         <Text style={styles.headerTitle}>{tonightOnly ? 'Tonight Near You' : 'For You'}</Text>
         <Text style={styles.headerSub}>Discover - Commit - Coordinate in {user.city}</Text>
 
@@ -690,6 +708,8 @@ export function FeedScreen({
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        onScroll={onFeedScroll}
+        scrollEventThrottle={16}
         onEndReachedThreshold={0.45}
         onEndReached={() => {
           if (rankedEvents.length > 0) {
@@ -758,6 +778,12 @@ const createStyles = (theme: ThemePalette) =>
     paddingBottom: 10,
     paddingTop: 8,
     gap: 6,
+  },
+  headerLogo: {
+    width: 112,
+    height: 38,
+    alignSelf: 'flex-start',
+    marginBottom: 2,
   },
   headerTitle: {
     color: theme.text,
