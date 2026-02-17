@@ -1,4 +1,4 @@
-export type TabKey = 'Feed' | 'Map' | 'Explore' | 'Upload' | 'Profile';
+export type TabKey = 'Feed' | 'Map' | 'Explore' | 'Messages' | 'Upload' | 'Profile';
 
 export type IntentState = 'interested' | 'going' | 'saved' | undefined;
 export type StoredIntentState = 'interested' | 'going' | 'saved';
@@ -136,3 +136,31 @@ export type ReportReason =
   | 'other';
 
 export type InteractionMap = Record<string, IntentState>;
+
+export interface DirectMessageFriend {
+  id: string;
+  name: string;
+  handle: string;
+  avatar: string;
+}
+
+export interface DirectMessageThread {
+  id: string;
+  friendId: string;
+  updatedAtIso: string;
+  lastMessagePreview: string;
+}
+
+export interface DirectMessageItem {
+  id: string;
+  threadId: string;
+  sender: 'self' | 'friend';
+  text: string;
+  flyerEventId?: string;
+  createdAtIso: string;
+}
+
+export interface DirectInboxData {
+  threads: DirectMessageThread[];
+  messages: DirectMessageItem[];
+}

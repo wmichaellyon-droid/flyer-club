@@ -20,6 +20,7 @@ interface EventDetailScreenProps {
   onOpenEntity: (entityId: string) => void;
   onToggleInterested: () => void;
   onSetGoing: () => void;
+  onMessageFlyer: () => void;
   onShareEvent: (destination: 'native' | 'sms') => Promise<void>;
   onGetTickets: () => Promise<void>;
   onAddToCalendar: () => Promise<void>;
@@ -42,6 +43,7 @@ export function EventDetailScreen({
   onOpenEntity,
   onToggleInterested,
   onSetGoing,
+  onMessageFlyer,
   onShareEvent,
   onGetTickets,
   onAddToCalendar,
@@ -135,6 +137,9 @@ export function EventDetailScreen({
           </Pressable>
           <Pressable onPress={onToggleInterested} style={styles.actionBtn}>
             <Text style={styles.actionLabel}>Interested</Text>
+          </Pressable>
+          <Pressable onPress={onMessageFlyer} style={styles.actionBtn}>
+            <Text style={styles.actionLabel}>DM Flyer</Text>
           </Pressable>
           <Pressable onPress={() => void onShareEvent('native')} style={styles.actionBtn}>
             <Text style={styles.actionLabel}>Share</Text>

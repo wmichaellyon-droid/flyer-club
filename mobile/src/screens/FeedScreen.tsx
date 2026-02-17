@@ -24,6 +24,7 @@ interface FeedScreenProps {
   onOpenEvent: (eventId: string) => void;
   onToggleInterested: (eventId: string) => void;
   onSetGoing: (eventId: string) => void;
+  onMessageFlyer: (eventId: string) => void;
   onShareEvent: (event: EventItem, destination: 'native' | 'sms') => Promise<void>;
   onGetTickets: (event: EventItem) => Promise<void>;
   onFlyerImpression: (eventId: string) => void;
@@ -100,6 +101,7 @@ function FeedCard({
   onOpenEvent,
   onToggleInterested,
   onSetGoing,
+  onMessageFlyer,
   onShareEvent,
   onGetTickets,
 }: {
@@ -109,6 +111,7 @@ function FeedCard({
   onOpenEvent: () => void;
   onToggleInterested: () => void;
   onSetGoing: () => void;
+  onMessageFlyer: () => void;
   onShareEvent: (destination: 'native' | 'sms') => Promise<void>;
   onGetTickets: () => Promise<void>;
 }) {
@@ -191,6 +194,9 @@ function FeedCard({
           <Pressable onPress={onSetGoing} style={[styles.actionBtn, styles.actionBtnPrimary]}>
             <Text style={styles.actionBtnPrimaryLabel}>Going</Text>
           </Pressable>
+          <Pressable onPress={onMessageFlyer} style={styles.actionBtn}>
+            <Text style={styles.actionBtnLabel}>DM</Text>
+          </Pressable>
           <Pressable onPress={() => void onShareEvent('native')} style={styles.actionBtn}>
             <Text style={styles.actionBtnLabel}>Share</Text>
           </Pressable>
@@ -230,6 +236,7 @@ export function FeedScreen({
   onOpenEvent,
   onToggleInterested,
   onSetGoing,
+  onMessageFlyer,
   onShareEvent,
   onGetTickets,
   onFlyerImpression,
@@ -327,6 +334,7 @@ export function FeedScreen({
             onOpenEvent={() => onOpenEvent(item.rankedEvent.event.id)}
             onToggleInterested={() => onToggleInterested(item.rankedEvent.event.id)}
             onSetGoing={() => onSetGoing(item.rankedEvent.event.id)}
+            onMessageFlyer={() => onMessageFlyer(item.rankedEvent.event.id)}
             onShareEvent={(destination) => onShareEvent(item.rankedEvent.event, destination)}
             onGetTickets={() => onGetTickets(item.rankedEvent.event)}
           />
@@ -556,11 +564,12 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
     marginBottom: 2,
   },
   actionBtn: {
-    flex: 1,
+    minWidth: '31%',
     backgroundColor: '#ffffff0e',
     paddingVertical: 8,
     borderRadius: 999,

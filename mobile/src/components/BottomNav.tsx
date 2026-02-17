@@ -7,7 +7,16 @@ interface BottomNavProps {
   onChange: (tab: TabKey) => void;
 }
 
-const tabs: TabKey[] = ['Feed', 'Map', 'Explore', 'Upload', 'Profile'];
+const tabs: TabKey[] = ['Feed', 'Map', 'Explore', 'Messages', 'Upload', 'Profile'];
+
+const tabIcons: Record<TabKey, string> = {
+  Feed: '🏠',
+  Map: '🗺️',
+  Explore: '🧭',
+  Messages: '💬',
+  Upload: '➕',
+  Profile: '👤',
+};
 
 export function BottomNav({ activeTab, onChange }: BottomNavProps) {
   return (
@@ -19,9 +28,10 @@ export function BottomNav({ activeTab, onChange }: BottomNavProps) {
             key={tab}
             onPress={() => onChange(tab)}
             style={[styles.tab, active && styles.tabActive]}
+            accessibilityLabel={tab}
           >
+            <Text style={[styles.tabIcon, active && styles.tabIconActive]}>{tabIcons[tab]}</Text>
             <View style={[styles.tabDot, active && styles.tabDotActive]} />
-            <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{tab}</Text>
           </Pressable>
         );
       })}
@@ -41,7 +51,7 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    paddingVertical: 9,
+    paddingVertical: 7,
     borderRadius: 999,
     alignItems: 'center',
     marginHorizontal: 2,
@@ -49,27 +59,24 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   tabActive: {
-    backgroundColor: '#ffffff0f',
+    backgroundColor: '#ffffff12',
     borderColor: '#ffffff35',
+  },
+  tabIcon: {
+    fontSize: 20,
+    opacity: 0.78,
+  },
+  tabIconActive: {
+    opacity: 1,
   },
   tabDot: {
     width: 4,
     height: 4,
     borderRadius: 999,
-    marginBottom: 5,
+    marginTop: 2,
     backgroundColor: '#6f8796',
   },
   tabDotActive: {
     backgroundColor: theme.primary,
-  },
-  tabLabel: {
-    color: theme.textMuted,
-    fontWeight: '700',
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  tabLabelActive: {
-    color: theme.text,
   },
 });

@@ -13,7 +13,9 @@ export type AnalyticsEventName =
   | 'event_reported'
   | 'user_blocked'
   | 'calendar_added'
-  | 'radius_changed';
+  | 'radius_changed'
+  | 'dm_flyer_intent'
+  | 'dm_sent';
 
 export function trackEvent(
   userId: string,

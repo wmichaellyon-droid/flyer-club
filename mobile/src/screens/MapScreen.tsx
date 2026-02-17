@@ -26,6 +26,7 @@ interface MapScreenProps {
   onOpenEvent: (eventId: string) => void;
   onToggleInterested: (eventId: string) => void;
   onSetGoing: (eventId: string) => void;
+  onMessageFlyer: (eventId: string) => void;
   onUpdateUserLocation: (coords: UserLocation) => void;
   onShareEvent: (event: EventItem, destination: 'native' | 'sms') => Promise<void>;
   onGetTickets: (event: EventItem) => Promise<void>;
@@ -89,6 +90,7 @@ export function MapScreen({
   onOpenEvent,
   onToggleInterested,
   onSetGoing,
+  onMessageFlyer,
   onUpdateUserLocation,
   onShareEvent,
   onGetTickets,
@@ -359,6 +361,9 @@ export function MapScreen({
             </Pressable>
             <Pressable onPress={() => onToggleInterested(selectedEvent.event.id)} style={styles.actionBtn}>
               <Text style={styles.actionBtnLabel}>Interested</Text>
+            </Pressable>
+            <Pressable onPress={() => onMessageFlyer(selectedEvent.event.id)} style={styles.actionBtn}>
+              <Text style={styles.actionBtnLabel}>DM</Text>
             </Pressable>
             <Pressable onPress={() => void onShareEvent(selectedEvent.event, 'native')} style={styles.actionBtn}>
               <Text style={styles.actionBtnLabel}>Share</Text>

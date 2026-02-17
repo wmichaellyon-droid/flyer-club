@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { BottomNav } from './src/components/BottomNav';
 import { ScreenBackdrop } from './src/components/ScreenBackdrop';
-import { AUSTIN_EVENTS, DEFAULT_USER } from './src/mockData';
+import { AUSTIN_EVENTS, DEFAULT_USER, DM_FRIENDS } from './src/mockData';
 import { shareEvent, shareEventBySms, parseSharedEventId } from './src/share';
 import { EventDetailScreen } from './src/screens/EventDetailScreen';
 import { EntityProfileScreen } from './src/screens/EntityProfileScreen';
@@ -12,6 +12,7 @@ import { ExploreScreen } from './src/screens/ExploreScreen';
 import { FeedScreen } from './src/screens/FeedScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { MapScreen } from './src/screens/MapScreen';
+import { MessagesScreen } from './src/screens/MessagesScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { UploadScreen } from './src/screens/UploadScreen';
@@ -31,10 +32,17 @@ import {
   setEventModerationStatus,
   upsertProfile,
 } from './src/services/backend';
+import {
+  loadDirectInbox,
+  saveDirectInbox,
+  sendDirectMessage,
+  upsertThreadForFriend,
+} from './src/services/directMessages';
 import { trackEvent } from './src/services/analytics';
 import { cancelEventReminders, initializeNotifications, scheduleEventReminders } from './src/services/reminders';
 import { theme } from './src/theme';
 import {
+  DirectInboxData,
   EventTasteAnswers,
   InteractionMap,
   IntentState,
@@ -126,6 +134,10 @@ export default function App() {
   const [userLocation, setUserLocation] = useState<UserLocation>(AUSTIN_CENTER);
   const [blockedUserIds, setBlockedUserIds] = useState<string[]>([]);
   const [interactions, setInteractions] = useState<InteractionMap>({});
+  const [directInbox, setDirectInbox] = useState<DirectInboxData>({ threads: [], messages: [] });
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [pendingDmFlyerEventId, setPendingDmFlyerEventId] = useState<string | null>(null);
+  const [dmLoaded, setDmLoaded] = useState(false);
   const authStateRef = useRef({ loginComplete, onboardingComplete });
 
   authStateRef.current = { loginComplete, onboardingComplete };
@@ -181,11 +193,16 @@ export default function App() {
       }
 
       await refreshData(session.id);
+      const inbox = await loadDirectInbox(session.id, DM_FRIENDS);
+      if (active) {
+        setDirectInbox(inbox);
+        setDmLoaded(true);
+      }
       trackEvent(session.id, 'app_opened', { loginComplete: Boolean(profile) });
       if (active) {
         setAuthLoading(false);
       }
-    })().catch(() => {
+    })().catch(async () => {
       if (!active) {
         return;
       }
@@ -196,6 +213,11 @@ export default function App() {
         evt_1: 'interested',
         evt_3: 'going',
       });
+      const inbox = await loadDirectInbox('local-dev-user', DM_FRIENDS);
+      if (active) {
+        setDirectInbox(inbox);
+        setDmLoaded(true);
+      }
       setAuthLoading(false);
     });
 
@@ -210,6 +232,13 @@ export default function App() {
     }
     void upsertProfile(authUserId, user);
   }, [authUserId, loginComplete, onboardingComplete, user]);
+
+  useEffect(() => {
+    if (!authUserId || !dmLoaded) {
+      return;
+    }
+    void saveDirectInbox(authUserId, directInbox);
+  }, [authUserId, dmLoaded, directInbox]);
 
   useEffect(() => {
     if (!authUserId || !loginComplete || !onboardingComplete) {
@@ -335,6 +364,49 @@ export default function App() {
     setSelectedEntityId(entityId);
   };
 
+  const onOpenDmForEvent = (eventId: string) => {
+    setPendingDmFlyerEventId(eventId);
+    setSelectedEventId(null);
+    setActiveTab('Messages');
+    trackEvent(authUserId, 'dm_flyer_intent', { eventId });
+  };
+
+  const onSelectThread = (threadId: string | null) => {
+    if (!threadId) {
+      setSelectedThreadId(null);
+      return;
+    }
+
+    const existing = directInbox.threads.find((thread) => thread.id === threadId);
+    if (existing) {
+      setSelectedThreadId(threadId);
+      return;
+    }
+
+    if (threadId.startsWith('thread_')) {
+      const friendId = threadId.slice('thread_'.length);
+      const next = upsertThreadForFriend(directInbox, friendId, new Date().toISOString(), 'New chat');
+      setDirectInbox(next);
+      setSelectedThreadId(`thread_${friendId}`);
+      return;
+    }
+
+    setSelectedThreadId(threadId);
+  };
+
+  const onSendDirectMessage = (payload: { friendId: string; text: string; flyerEventId?: string }) => {
+    const next = sendDirectMessage(directInbox, payload);
+    setDirectInbox(next);
+    const thread = next.threads.find((item) => item.friendId === payload.friendId);
+    if (thread) {
+      setSelectedThreadId(thread.id);
+    }
+    trackEvent(authUserId, 'dm_sent', {
+      friendId: payload.friendId,
+      hasFlyer: Boolean(payload.flyerEventId),
+    });
+  };
+
   const onShareEvent = async (event: (typeof AUSTIN_EVENTS)[number], destination: 'native' | 'sms') => {
     if (destination === 'native') {
       await shareEvent(event);
@@ -443,6 +515,7 @@ export default function App() {
           onOpenEntity={onOpenEntity}
           onToggleInterested={() => onToggleInterested(selectedEvent.id)}
           onSetGoing={() => onSetGoing(selectedEvent.id)}
+          onMessageFlyer={() => onOpenDmForEvent(selectedEvent.id)}
           onShareEvent={(destination) => onShareEvent(selectedEvent, destination)}
           onGetTickets={() => onGetTickets(selectedEvent)}
           onAddToCalendar={() => onAddToCalendar(selectedEvent)}
@@ -471,6 +544,7 @@ export default function App() {
             onOpenEvent={onOpenEvent}
             onToggleInterested={onToggleInterested}
             onSetGoing={onSetGoing}
+            onMessageFlyer={onOpenDmForEvent}
             onShareEvent={onShareEvent}
             onGetTickets={onGetTickets}
             onFlyerImpression={(eventId) => trackEvent(authUserId, 'flyer_impression', { eventId })}
@@ -491,6 +565,7 @@ export default function App() {
             onOpenEvent={onOpenEvent}
             onToggleInterested={onToggleInterested}
             onSetGoing={onSetGoing}
+            onMessageFlyer={onOpenDmForEvent}
             onUpdateUserLocation={setUserLocation}
             onShareEvent={onShareEvent}
             onGetTickets={onGetTickets}
@@ -507,6 +582,21 @@ export default function App() {
               trackEvent(authUserId, 'radius_changed', { radius });
             }}
             onOpenEvent={onOpenEvent}
+          />
+        )}
+
+        {activeTab === 'Messages' && (
+          <MessagesScreen
+            user={user}
+            events={knownEvents}
+            friends={DM_FRIENDS}
+            inbox={directInbox}
+            selectedThreadId={selectedThreadId}
+            pendingFlyerEventId={pendingDmFlyerEventId}
+            onSelectThread={onSelectThread}
+            onSendMessage={onSendDirectMessage}
+            onOpenEvent={(eventId) => onOpenEvent(eventId)}
+            onClearPendingFlyer={() => setPendingDmFlyerEventId(null)}
           />
         )}
 

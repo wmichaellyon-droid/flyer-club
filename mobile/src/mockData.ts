@@ -1,4 +1,11 @@
-import { EventItem, EventKind, EventTasteQuestion, UserRole, UserSetup } from './types';
+import {
+  DirectMessageFriend,
+  EventItem,
+  EventKind,
+  EventTasteQuestion,
+  UserRole,
+  UserSetup,
+} from './types';
 
 export const DEFAULT_USER: UserSetup = {
   id: '',
@@ -83,6 +90,15 @@ export const LOGIN_QUESTIONS: EventTasteQuestion[] = [
     prompt: 'What ticket style works for you?',
     options: ['Free community events', 'Under $20 shows', 'Special $20-$40 nights', 'Mix of everything'],
   },
+];
+
+export const DM_QUICK_TEXTS = ['Are you coming?', "I'm there", 'Pull up', 'Want to go together?'];
+
+export const DM_FRIENDS: DirectMessageFriend[] = [
+  { id: 'friend_maya', name: 'Maya', handle: '@maya.noise', avatar: '🦇' },
+  { id: 'friend_luis', name: 'Luis', handle: '@luis.afterdark', avatar: '🎞️' },
+  { id: 'friend_syd', name: 'Syd', handle: '@syd.flyers', avatar: '⚡' },
+  { id: 'friend_rae', name: 'Rae', handle: '@rae.citynight', avatar: '🖤' },
 ];
 
 export const AUSTIN_EVENTS: EventItem[] = [
