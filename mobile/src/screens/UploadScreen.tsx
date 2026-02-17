@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND } from '../mockData';
-import { theme } from '../theme';
+import { ThemePalette, useAppTheme } from '../theme';
 import { combineDateAndTime, defaultEventEndIso } from '../time';
 import {
   EntityKind,
@@ -49,6 +49,8 @@ function clampUnit(value: number) {
 }
 
 export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateEvent }: UploadScreenProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [title, setTitle] = useState('');
   const [promoter, setPromoter] = useState('');
   const [date, setDate] = useState('');
@@ -579,7 +581,8 @@ export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateE
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) =>
+  StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.bg,
@@ -861,4 +864,4 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-});
+  });

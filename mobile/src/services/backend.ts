@@ -18,6 +18,7 @@ import {
   StoredIntentState,
   UserRole,
   UserSetup,
+  ThemeMode,
 } from '../types';
 import { evaluateFlyerDraft } from './moderation';
 
@@ -25,6 +26,7 @@ const AUSTIN_CENTER = { latitude: 30.2672, longitude: -97.7431 };
 const META_PROFILE_VISIBILITY_KEY = '__profile_visibility';
 const META_SHOW_INTERESTED_KEY = '__profile_show_interested';
 const META_PUBLIC_INTERESTED_IDS_KEY = '__profile_public_interested_ids';
+const META_THEME_MODE_KEY = '__theme_mode';
 
 type EventRow = {
   id: string;
@@ -131,6 +133,7 @@ function parseProfileMeta(tasteAnswers: Record<string, string> | null | undefine
   const visibility: ProfileVisibility =
     source[META_PROFILE_VISIBILITY_KEY] === 'private' ? 'private' : 'public';
   const showInterested = source[META_SHOW_INTERESTED_KEY] !== 'false';
+  const themeMode: ThemeMode = source[META_THEME_MODE_KEY] === 'light' ? 'light' : 'dark';
   const publicInterestedEventIds = (source[META_PUBLIC_INTERESTED_IDS_KEY] ?? '')
     .split(',')
     .map((value) => value.trim())
@@ -140,10 +143,12 @@ function parseProfileMeta(tasteAnswers: Record<string, string> | null | undefine
   delete cleanTasteAnswers[META_PROFILE_VISIBILITY_KEY];
   delete cleanTasteAnswers[META_SHOW_INTERESTED_KEY];
   delete cleanTasteAnswers[META_PUBLIC_INTERESTED_IDS_KEY];
+  delete cleanTasteAnswers[META_THEME_MODE_KEY];
 
   return {
     visibility,
     showInterested,
+    themeMode,
     publicInterestedEventIds,
     cleanTasteAnswers,
   };
@@ -155,6 +160,7 @@ function withProfileMeta(user: UserSetup) {
     [META_PROFILE_VISIBILITY_KEY]: user.profileVisibility,
     [META_SHOW_INTERESTED_KEY]: user.showInterestedOnProfile ? 'true' : 'false',
     [META_PUBLIC_INTERESTED_IDS_KEY]: user.publicInterestedEventIds.join(','),
+    [META_THEME_MODE_KEY]: user.themeMode,
   };
 }
 
@@ -436,6 +442,7 @@ export async function fetchProfile(userId: string): Promise<UserSetup | null> {
     profileVisibility: profileMeta.visibility,
     showInterestedOnProfile: profileMeta.showInterested,
     publicInterestedEventIds: profileMeta.publicInterestedEventIds,
+    themeMode: profileMeta.themeMode,
   };
 }
 

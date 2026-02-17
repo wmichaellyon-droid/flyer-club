@@ -1,6 +1,12 @@
+import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { ThemePalette, useAppTheme, useThemeMode } from '../theme';
 
 export function ScreenBackdrop() {
+  const theme = useAppTheme();
+  const mode = useThemeMode();
+  const styles = useMemo(() => createStyles(theme, mode), [theme, mode]);
+
   return (
     <View pointerEvents="none" style={styles.root}>
       <View style={styles.topGlow} />
@@ -11,17 +17,19 @@ export function ScreenBackdrop() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette, mode: 'light' | 'dark') =>
+  StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
+    backgroundColor: theme.bg,
   },
   topGlow: {
     position: 'absolute',
     width: 360,
     height: 360,
     borderRadius: 999,
-    backgroundColor: '#1dd3b024',
+    backgroundColor: mode === 'dark' ? '#1dd3b024' : '#00000008',
     top: -180,
     right: -110,
   },
@@ -30,7 +38,7 @@ const styles = StyleSheet.create({
     width: 260,
     height: 260,
     borderRadius: 999,
-    backgroundColor: '#45b6ff1a',
+    backgroundColor: mode === 'dark' ? '#45b6ff1a' : '#00000006',
     top: '34%',
     left: -120,
   },
@@ -39,12 +47,12 @@ const styles = StyleSheet.create({
     width: 420,
     height: 420,
     borderRadius: 999,
-    backgroundColor: '#ff7a5915',
+    backgroundColor: mode === 'dark' ? '#ff7a5915' : '#00000005',
     bottom: -260,
     right: -140,
   },
   noiseMask: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#ffffff03',
+    backgroundColor: mode === 'dark' ? '#ffffff03' : '#00000003',
   },
-});
+  });

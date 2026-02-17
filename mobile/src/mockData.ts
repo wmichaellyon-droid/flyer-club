@@ -19,6 +19,7 @@ export const DEFAULT_USER: UserSetup = {
   profileVisibility: 'public',
   showInterestedOnProfile: true,
   publicInterestedEventIds: [],
+  themeMode: 'dark',
 };
 
 export const PROFILE_ROLES: { id: UserRole; title: string; description: string }[] = [

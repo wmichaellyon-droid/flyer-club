@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { DM_QUICK_TEXTS } from '../mockData';
-import { theme } from '../theme';
+import { ThemePalette, useAppTheme } from '../theme';
 import { DirectInboxData, DirectMessageFriend, EventItem, UserSetup } from '../types';
 
 interface MessagesScreenProps {
@@ -44,6 +44,8 @@ export function MessagesScreen({
   onOpenEvent,
   onClearPendingFlyer,
 }: MessagesScreenProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [draft, setDraft] = useState('');
   const [attachFlyer, setAttachFlyer] = useState(true);
 
@@ -269,7 +271,8 @@ export function MessagesScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) =>
+  StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.bg,
@@ -566,5 +569,5 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     marginBottom: 2,
   },
-});
+  });
 

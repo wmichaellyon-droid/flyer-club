@@ -1,4 +1,5 @@
 export type TabKey = 'Feed' | 'Map' | 'Explore' | 'Messages' | 'Upload' | 'Profile';
+export type ThemeMode = 'dark' | 'light';
 
 export type IntentState = 'interested' | 'going' | 'saved' | undefined;
 export type StoredIntentState = 'interested' | 'going' | 'saved';
@@ -65,6 +66,7 @@ export interface UserSetup {
   profileVisibility: ProfileVisibility;
   showInterestedOnProfile: boolean;
   publicInterestedEventIds: string[];
+  themeMode: ThemeMode;
 }
 
 export interface UserLocation {

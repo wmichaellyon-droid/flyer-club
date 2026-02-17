@@ -3,7 +3,7 @@ import { FlatList, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } 
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND, EXPLORE_FILTERS } from '../mockData';
 import { milesFromUserToEvent } from '../geo';
-import { theme } from '../theme';
+import { ThemePalette, useAppTheme } from '../theme';
 import { EventItem, EventKind, RadiusFilter, UserLocation } from '../types';
 
 interface ExploreScreenProps {
@@ -23,6 +23,8 @@ export function ExploreScreen({
   onChangeRadius,
   onOpenEvent,
 }: ExploreScreenProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [query, setQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>('Tonight');
   const [selectedKind, setSelectedKind] = useState<'all' | EventKind>('all');
@@ -180,7 +182,8 @@ export function ExploreScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) =>
+  StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.bg,
@@ -282,4 +285,4 @@ const styles = StyleSheet.create({
     color: theme.textMuted,
     fontSize: 12,
   },
-});
+  });

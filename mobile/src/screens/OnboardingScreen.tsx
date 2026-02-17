@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { AVAILABLE_INTERESTS, PROFILE_ROLES } from '../mockData';
-import { theme } from '../theme';
+import { ThemePalette, useAppTheme } from '../theme';
 import { UserRole, UserSetup } from '../types';
 
 interface OnboardingScreenProps {
@@ -11,6 +11,8 @@ interface OnboardingScreenProps {
 }
 
 export function OnboardingScreen({ initialUser, onComplete }: OnboardingScreenProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [city, setCity] = useState(initialUser.city);
   const [selected, setSelected] = useState<string[]>(initialUser.interests);
   const [role, setRole] = useState<UserRole>(initialUser.role);
@@ -94,7 +96,8 @@ export function OnboardingScreen({ initialUser, onComplete }: OnboardingScreenPr
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) =>
+  StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.bg,
@@ -213,4 +216,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 16,
   },
-});
+  });

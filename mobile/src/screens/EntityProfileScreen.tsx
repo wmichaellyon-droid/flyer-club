@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
-import { theme } from '../theme';
+import { ThemePalette, useAppTheme } from '../theme';
 import { EntityPageData } from '../types';
 
 interface EntityProfileScreenProps {
@@ -17,6 +17,8 @@ export function EntityProfileScreen({
   onOpenEvent,
   onLoadEntityPage,
 }: EntityProfileScreenProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [loading, setLoading] = useState(true);
   const [pageData, setPageData] = useState<EntityPageData | null>(null);
 
@@ -131,7 +133,8 @@ export function EntityProfileScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) =>
+  StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.bg,
@@ -253,4 +256,4 @@ const styles = StyleSheet.create({
     color: theme.textMuted,
     fontSize: 12,
   },
-});
+  });

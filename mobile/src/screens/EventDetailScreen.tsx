@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ImageBackground,
   Pressable,
@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
-import { theme } from '../theme';
+import { ThemePalette, useAppTheme } from '../theme';
 import { EventItem, IntentState, ReportReason } from '../types';
 
 interface EventDetailScreenProps {
@@ -50,6 +50,8 @@ export function EventDetailScreen({
   onReportEvent,
   onBlockOrganizer,
 }: EventDetailScreenProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [selectedReason, setSelectedReason] = useState<ReportReason>('wrong_details');
   const [reportDetails, setReportDetails] = useState('');
   const [reportState, setReportState] = useState<'idle' | 'sent' | 'error'>('idle');
@@ -238,7 +240,8 @@ export function EventDetailScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) =>
+  StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.bg,
@@ -518,4 +521,4 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 14,
   },
-});
+  });

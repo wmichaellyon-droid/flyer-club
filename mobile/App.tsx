@@ -40,7 +40,7 @@ import {
 } from './src/services/directMessages';
 import { trackEvent } from './src/services/analytics';
 import { cancelEventReminders, initializeNotifications, scheduleEventReminders } from './src/services/reminders';
-import { theme } from './src/theme';
+import { AppThemeProvider, ThemeMode, useAppTheme } from './src/theme';
 import {
   DirectInboxData,
   EventTasteAnswers,
@@ -107,6 +107,8 @@ function inferInterestsFromAnswers(answers: EventTasteAnswers) {
 }
 
 function LoadingScreen({ label }: { label: string }) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   return (
     <SafeAreaView style={styles.safe}>
       <ScreenBackdrop />
@@ -120,6 +122,7 @@ function LoadingScreen({ label }: { label: string }) {
 }
 
 export default function App() {
+  const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
   const [authLoading, setAuthLoading] = useState(true);
   const [authUserId, setAuthUserId] = useState<string>('');
   const [loginComplete, setLoginComplete] = useState(false);
@@ -203,6 +206,7 @@ export default function App() {
       }
       if (profile) {
         setUser(profile);
+        setThemeMode(profile.themeMode);
         setLoginComplete(profile.profileName.trim().length > 0 && profile.email.trim().length > 0);
         setOnboardingComplete(profile.city.trim().length > 0 && profile.interests.length > 0);
       }
@@ -222,6 +226,7 @@ export default function App() {
         return;
       }
       setAuthUserId('local-dev-user');
+      setThemeMode('dark');
       setEvents(AUSTIN_EVENTS);
       setSubmissions([]);
       setInteractions({
@@ -394,6 +399,11 @@ export default function App() {
     }));
   };
 
+  const onUpdateThemeMode = (mode: ThemeMode) => {
+    setThemeMode(mode);
+    setUser((prev) => ({ ...prev, themeMode: mode }));
+  };
+
   const onSetInterestedVisibility = (eventId: string, visible: boolean) => {
     setUser((prev) => {
       const nextIds = prev.publicInterestedEventIds.filter((id) => id !== eventId);
@@ -500,13 +510,17 @@ export default function App() {
   };
 
   if (authLoading) {
-    return <LoadingScreen label="Initializing session..." />;
+    return (
+      <AppThemeProvider mode={themeMode}>
+        <LoadingScreen label="Initializing session..." />
+      </AppThemeProvider>
+    );
   }
 
   if (!loginComplete) {
     return (
-      <>
-        <StatusBar style="light" />
+      <AppThemeProvider mode={themeMode}>
+        <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
         <LoginScreen
           onComplete={({ email, profileName, profileImageUrl, tasteAnswers }) => {
             const nextUser: UserSetup = {
@@ -522,14 +536,14 @@ export default function App() {
             setLoginComplete(true);
           }}
         />
-      </>
+      </AppThemeProvider>
     );
   }
 
   if (!onboardingComplete) {
     return (
-      <>
-        <StatusBar style="light" />
+      <AppThemeProvider mode={themeMode}>
+        <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
         <OnboardingScreen
           initialUser={user}
           onComplete={(city, interests, role) => {
@@ -537,14 +551,14 @@ export default function App() {
             setOnboardingComplete(true);
           }}
         />
-      </>
+      </AppThemeProvider>
     );
   }
 
   if (selectedEntityId) {
     return (
-      <>
-        <StatusBar style="light" />
+      <AppThemeProvider mode={themeMode}>
+        <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
         <EntityProfileScreen
           entityId={selectedEntityId}
           onBack={() => setSelectedEntityId(null)}
@@ -554,14 +568,14 @@ export default function App() {
           }}
           onLoadEntityPage={(entityId) => fetchEntityPageData(authUserId, entityId)}
         />
-      </>
+      </AppThemeProvider>
     );
   }
 
   if (selectedEvent) {
     return (
-      <>
-        <StatusBar style="light" />
+      <AppThemeProvider mode={themeMode}>
+        <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
         <EventDetailScreen
           event={selectedEvent}
           intent={interactions[selectedEvent.id]}
@@ -576,15 +590,16 @@ export default function App() {
           onReportEvent={(reason, details) => onReportEvent(selectedEvent, reason, details)}
           onBlockOrganizer={() => onBlockOrganizer(selectedEvent)}
         />
-      </>
+      </AppThemeProvider>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar style="light" />
-      <View style={styles.content}>
-        {activeTab === 'Feed' && (
+    <AppThemeProvider mode={themeMode}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: themeMode === 'dark' ? '#000000' : '#ffffff' }}>
+        <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
+        <View style={{ flex: 1 }}>
+          {activeTab === 'Feed' && (
           <FeedScreen
             events={events}
             interactions={interactions}
@@ -686,17 +701,20 @@ export default function App() {
             onOpenEvent={onOpenEvent}
             onSetIntent={onSetIntent}
             onUpdateProfilePrivacy={onUpdateProfilePrivacy}
+            onUpdateThemeMode={onUpdateThemeMode}
             onSetInterestedVisibility={onSetInterestedVisibility}
             onRespondFollowRequest={onRespondFollowRequest}
           />
         )}
-      </View>
-      <BottomNav activeTab={activeTab} onChange={setActiveTab} />
-    </SafeAreaView>
+        </View>
+        <BottomNav activeTab={activeTab} onChange={setActiveTab} />
+      </SafeAreaView>
+    </AppThemeProvider>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ReturnType<typeof useAppTheme>) =>
+  StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.bg,
@@ -719,4 +737,4 @@ const styles = StyleSheet.create({
     color: theme.textMuted,
     fontSize: 13,
   },
-});
+  });

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { FlatList, Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
-import { theme } from '../theme';
+import { ThemePalette, useAppTheme } from '../theme';
 import { EventItem, FollowRequest, InteractionMap, IntentFilter, UserRole, UserSetup } from '../types';
 
 interface ProfileScreenProps {
@@ -15,6 +15,7 @@ interface ProfileScreenProps {
     profileVisibility?: 'public' | 'private';
     showInterestedOnProfile?: boolean;
   }) => void;
+  onUpdateThemeMode: (mode: 'light' | 'dark') => void;
   onSetInterestedVisibility: (eventId: string, visible: boolean) => void;
   onRespondFollowRequest: (requestId: string, action: 'approve' | 'decline') => void;
 }
@@ -59,9 +60,12 @@ export function ProfileScreen({
   onOpenEvent,
   onSetIntent,
   onUpdateProfilePrivacy,
+  onUpdateThemeMode,
   onSetInterestedVisibility,
   onRespondFollowRequest,
 }: ProfileScreenProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [activeTab, setActiveTab] = useState<IntentFilter>('Interested');
   const isPromoter = user.role === 'promoter';
 
@@ -131,6 +135,34 @@ export function ProfileScreen({
           <Text style={styles.privacyHint}>
             Going events always show on profile. Interested events are optional and controllable.
           </Text>
+          <View style={styles.privacyRow}>
+            <Pressable
+              onPress={() => onUpdateThemeMode('dark')}
+              style={[styles.privacyToggle, user.themeMode === 'dark' && styles.privacyToggleActive]}
+            >
+              <Text
+                style={[
+                  styles.privacyToggleLabel,
+                  user.themeMode === 'dark' && styles.privacyToggleLabelActive,
+                ]}
+              >
+                Dark Mode
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => onUpdateThemeMode('light')}
+              style={[styles.privacyToggle, user.themeMode === 'light' && styles.privacyToggleActive]}
+            >
+              <Text
+                style={[
+                  styles.privacyToggleLabel,
+                  user.themeMode === 'light' && styles.privacyToggleLabelActive,
+                ]}
+              >
+                Light Mode
+              </Text>
+            </Pressable>
+          </View>
           <View style={styles.privacyRow}>
             <Pressable
               onPress={() => onUpdateProfilePrivacy({ profileVisibility: 'public' })}
@@ -317,7 +349,8 @@ export function ProfileScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) =>
+  StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.bg,
@@ -677,4 +710,4 @@ const styles = StyleSheet.create({
     color: theme.textMuted,
     fontSize: 12,
   },
-});
+  });

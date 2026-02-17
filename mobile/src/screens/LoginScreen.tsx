@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { DEFAULT_USER, LOGIN_QUESTIONS } from '../mockData';
-import { theme } from '../theme';
+import { ThemePalette, useAppTheme } from '../theme';
 import { EventTasteAnswers } from '../types';
 
 interface LoginScreenProps {
@@ -87,6 +87,8 @@ function pickBubbleImage(option: string, fallbackIndex: number) {
 }
 
 export function LoginScreen({ onComplete }: LoginScreenProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const { width } = useWindowDimensions();
 
   const baseSteps = 3; // profileName, email, profileImage
@@ -332,7 +334,8 @@ export function LoginScreen({ onComplete }: LoginScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) =>
+  StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.bg,
@@ -516,4 +519,4 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 15,
   },
-});
+  });

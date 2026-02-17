@@ -5,7 +5,7 @@ import * as Location from 'expo-location';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND, EXPLORE_FILTERS } from '../mockData';
 import { milesBetweenPoints, milesFromUserToEvent } from '../geo';
-import { theme } from '../theme';
+import { ThemePalette, useAppTheme } from '../theme';
 import {
   EventItem,
   EventKind,
@@ -95,6 +95,8 @@ export function MapScreen({
   onShareEvent,
   onGetTickets,
 }: MapScreenProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [activeChip, setActiveChip] = useState('Tonight');
   const [selectedKind, setSelectedKind] = useState<'all' | EventKind>('all');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all');
@@ -389,7 +391,8 @@ export function MapScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) =>
+  StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.bg,
@@ -587,4 +590,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-});
+  });

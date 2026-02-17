@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { milesFromUserToEvent } from '../geo';
-import { theme } from '../theme';
+import { ThemePalette, useAppTheme } from '../theme';
 import { EventItem, InteractionMap, IntentState, RadiusFilter, UserLocation, UserSetup } from '../types';
 
 interface FeedScreenProps {
@@ -105,6 +105,7 @@ function FeedCard({
   onShareEvent,
   onGetTickets,
   onFeedback,
+  styles,
 }: {
   rankedEvent: RankedEvent;
   intent: IntentState;
@@ -116,6 +117,7 @@ function FeedCard({
   onShareEvent: (destination: 'native' | 'sms') => Promise<void>;
   onGetTickets: () => Promise<void>;
   onFeedback: (message: string) => void;
+  styles: ReturnType<typeof createStyles>;
 }) {
   const { event, distanceMiles } = rankedEvent;
   const handle = socialHandleFromEvent(event);
@@ -264,6 +266,8 @@ export function FeedScreen({
   onGetTickets,
   onFlyerImpression,
 }: FeedScreenProps) {
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [chunkCount, setChunkCount] = useState(3);
   const [feedback, setFeedback] = useState('');
   const { width } = useWindowDimensions();
@@ -393,6 +397,7 @@ export function FeedScreen({
             onShareEvent={(destination) => onShareEvent(item.rankedEvent.event, destination)}
             onGetTickets={() => onGetTickets(item.rankedEvent.event)}
             onFeedback={showFeedback}
+            styles={styles}
           />
         )}
       />
@@ -405,7 +410,8 @@ export function FeedScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) =>
+  StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.bg,
@@ -645,5 +651,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-});
+  });
 
