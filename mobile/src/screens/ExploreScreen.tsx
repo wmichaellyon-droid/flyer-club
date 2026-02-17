@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
+import { eventSearchScore, SearchMatchType } from '../discovery';
 import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND, EXPLORE_FILTERS } from '../mockData';
 import { milesFromUserToEvent } from '../geo';
 import { ThemePalette, useAppTheme } from '../theme';
@@ -15,6 +16,16 @@ interface ExploreScreenProps {
 }
 
 const radiusOptions: RadiusFilter[] = [2, 5, 10, 'city'];
+
+function matchTypeLabel(type: SearchMatchType) {
+  if (type === 'venue') {
+    return 'Venue';
+  }
+  if (type === 'promoter') {
+    return 'Promoter';
+  }
+  return 'Event';
+}
 
 export function ExploreScreen({
   events,
@@ -42,23 +53,59 @@ export function ExploreScreen({
       .map((event) => ({
         event,
         distanceMiles: milesFromUserToEvent(userLocation, event),
+        search: eventSearchScore(event, q),
       }))
       .filter((item) => item.distanceMiles <= radiusMiles)
       .filter((item) => {
         const { event } = item;
-        const matchesText =
-          q.length === 0 ||
-          event.title.toLowerCase().includes(q) ||
-          event.venue.toLowerCase().includes(q) ||
-          event.neighborhood.toLowerCase().includes(q);
+        const matchesText = q.length === 0 || item.search.score > 0;
         const matchesFilter = selectedFilter ? event.tags.includes(selectedFilter) : true;
         const matchesKind = selectedKind === 'all' ? true : event.kind === selectedKind;
         const matchesSubcategory =
           selectedSubcategory === 'all' ? true : event.subcategory === selectedSubcategory;
         return matchesText && matchesFilter && matchesKind && matchesSubcategory;
       })
-      .sort((a, b) => a.distanceMiles - b.distanceMiles);
+      .sort((a, b) => {
+        if (q.length > 0 && b.search.score !== a.search.score) {
+          return b.search.score - a.search.score;
+        }
+        return a.distanceMiles - b.distanceMiles;
+      });
   }, [events, query, selectedFilter, selectedKind, selectedSubcategory, userLocation, radiusFilter]);
+
+  const quickVenueMatches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) {
+      return [];
+    }
+    const venueMap = new Map<string, number>();
+    for (const event of events) {
+      if (event.venue.toLowerCase().includes(q)) {
+        venueMap.set(event.venue, (venueMap.get(event.venue) ?? 0) + 1);
+      }
+    }
+    return Array.from(venueMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([venue]) => venue);
+  }, [events, query]);
+
+  const quickPromoterMatches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) {
+      return [];
+    }
+    const promoterMap = new Map<string, number>();
+    for (const event of events) {
+      if (event.promoter.toLowerCase().includes(q)) {
+        promoterMap.set(event.promoter, (promoterMap.get(event.promoter) ?? 0) + 1);
+      }
+    }
+    return Array.from(promoterMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([promoter]) => promoter);
+  }, [events, query]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -66,12 +113,41 @@ export function ExploreScreen({
       <View style={styles.container}>
         <Text style={styles.title}>Explore</Text>
         <TextInput
-          placeholder="Search nearby events"
+          placeholder="Search events, venues, promoters"
           placeholderTextColor={theme.textMuted}
           style={styles.search}
           value={query}
           onChangeText={setQuery}
         />
+
+        {query.trim().length > 0 && (
+          <View style={styles.quickWrap}>
+            {quickVenueMatches.length > 0 && (
+              <View style={styles.quickBlock}>
+                <Text style={styles.quickTitle}>Venues</Text>
+                <View style={styles.quickRow}>
+                  {quickVenueMatches.map((venue) => (
+                    <Pressable key={venue} onPress={() => setQuery(venue)} style={styles.quickChip}>
+                      <Text style={styles.quickChipLabel}>{venue}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
+            {quickPromoterMatches.length > 0 && (
+              <View style={styles.quickBlock}>
+                <Text style={styles.quickTitle}>Promoters</Text>
+                <View style={styles.quickRow}>
+                  {quickPromoterMatches.map((promoter) => (
+                    <Pressable key={promoter} onPress={() => setQuery(promoter)} style={styles.quickChip}>
+                      <Text style={styles.quickChipLabel}>{promoter}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
+        )}
 
         <View style={styles.filterRow}>
           {radiusOptions.map((option) => {
@@ -171,7 +247,19 @@ export function ExploreScreen({
                 <Text style={styles.eventMeta}>
                   {item.event.dateLabel} - {item.event.neighborhood} - {item.distanceMiles.toFixed(1)} mi
                 </Text>
+                <Text style={styles.eventMeta}>
+                  {item.event.venue} - {item.event.promoter}
+                </Text>
                 <Text style={styles.eventMeta}>{item.event.category} - {item.event.subcategory}</Text>
+                {item.search.matchedTypes.length > 0 && (
+                  <View style={styles.matchRow}>
+                    {item.search.matchedTypes.map((type) => (
+                      <View key={`${item.event.id}_${type}`} style={styles.matchChip}>
+                        <Text style={styles.matchChipLabel}>{matchTypeLabel(type)}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
               <Text style={styles.rowLink}>Open</Text>
             </Pressable>
@@ -207,6 +295,38 @@ const createStyles = (theme: ThemePalette) =>
     color: theme.text,
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  quickWrap: {
+    gap: 6,
+    marginTop: -2,
+  },
+  quickBlock: {
+    gap: 4,
+  },
+  quickTitle: {
+    color: theme.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
+  quickRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  quickChip: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surfaceAlt,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  quickChipLabel: {
+    color: theme.text,
+    fontSize: 11,
+    fontWeight: '600',
   },
   filterRow: {
     flexDirection: 'row',
@@ -265,6 +385,25 @@ const createStyles = (theme: ThemePalette) =>
     color: theme.textMuted,
     fontSize: 12,
     marginTop: 3,
+  },
+  matchRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 6,
+  },
+  matchChip: {
+    borderWidth: 1,
+    borderColor: theme.primary,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#ffffff10',
+  },
+  matchChipLabel: {
+    color: theme.text,
+    fontSize: 10,
+    fontWeight: '700',
   },
   rowLink: {
     color: theme.primary,

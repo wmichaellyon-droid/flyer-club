@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
+import { eventSearchScore } from '../discovery';
 import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND, EXPLORE_FILTERS } from '../mockData';
 import { milesBetweenPoints, milesFromUserToEvent } from '../geo';
 import { ThemePalette, useAppTheme } from '../theme';
@@ -98,6 +99,7 @@ export function MapScreen({
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [activeChip, setActiveChip] = useState('Tonight');
+  const [query, setQuery] = useState('');
   const [selectedKind, setSelectedKind] = useState<'all' | EventKind>('all');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -134,18 +136,20 @@ export function MapScreen({
   }, [queryCenter, region.latitude, region.longitude]);
 
   const filteredEvents = useMemo<EventWithDistance[]>(() => {
+    const q = query.trim().toLowerCase();
     const radiusMiles = radiusFilter === 'city' ? Infinity : radiusFilter;
     return events
       .filter((event) => filterByChip(event, activeChip))
       .filter((event) => (selectedKind === 'all' ? true : event.kind === selectedKind))
       .filter((event) => (selectedSubcategory === 'all' ? true : event.subcategory === selectedSubcategory))
+      .filter((event) => (q.length === 0 ? true : eventSearchScore(event, q).score > 0))
       .map((event) => ({
         event,
         distanceMiles: milesFromUserToEvent(queryCenter, event),
       }))
       .filter((item) => item.distanceMiles <= radiusMiles)
       .sort((a, b) => a.distanceMiles - b.distanceMiles);
-  }, [events, activeChip, selectedKind, selectedSubcategory, queryCenter, radiusFilter]);
+  }, [events, activeChip, selectedKind, selectedSubcategory, queryCenter, radiusFilter, query]);
 
   const selectedEvent = useMemo(
     () => filteredEvents.find((item) => item.event.id === selectedEventId) ?? null,
@@ -198,6 +202,16 @@ export function MapScreen({
       </View>
 
       <View style={styles.filterWrap}>
+        <TextInput
+          placeholder="Search events, venues, promoters"
+          placeholderTextColor={theme.textMuted}
+          style={styles.searchInput}
+          value={query}
+          onChangeText={(value) => {
+            setQuery(value);
+            setSelectedEventId(null);
+          }}
+        />
         <View style={styles.chipRow}>
           {radiusOptions.map((option) => {
             const active = option === radiusFilter;
@@ -415,6 +429,16 @@ const createStyles = (theme: ThemePalette) =>
     paddingHorizontal: 10,
     gap: 6,
     marginTop: 8,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 12,
+    backgroundColor: theme.surface,
+    color: theme.text,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 12,
   },
   chipRow: {
     flexDirection: 'row',

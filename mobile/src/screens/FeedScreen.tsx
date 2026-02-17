@@ -11,6 +11,15 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
+import {
+  buildInteractionProfile,
+  eventMatchesScene,
+  eventPreferenceBoost,
+  eventSceneScore,
+  SCENE_MODES,
+  SceneModeId,
+  topSceneFromProfile,
+} from '../discovery';
 import { milesFromUserToEvent } from '../geo';
 import { ThemePalette, useAppTheme } from '../theme';
 import { EventItem, InteractionMap, IntentState, RadiusFilter, UserLocation, UserSetup } from '../types';
@@ -43,15 +52,7 @@ interface FeedRow {
 }
 
 const radiusOptions: RadiusFilter[] = [2, 5, 10, 'city'];
-
-const interestKeywordMap: Record<string, string[]> = {
-  diy: ['diy', 'zine', 'print', 'indie', 'underground'],
-  film: ['film', 'screening', 'arthouse', 'documentary', 'horror', 'cinema'],
-  zines: ['zine', 'print', 'art', 'collage'],
-  community: ['community', 'mutual aid', 'meetup', 'workshop', 'market'],
-  nightlife: ['nightlife', 'house', 'electronic', 'dance', 'club', 'dj'],
-  comedy: ['comedy', 'stand-up', 'improv', 'alt comedy'],
-};
+const ALL_VENUES_KEY = '__all_venues__';
 
 function normalizeText(value: string) {
   return value.toLowerCase();
@@ -71,11 +72,22 @@ function eventAffinityScore(event: EventItem, userTasteCorpus: string) {
       event.tags.join(' '),
       event.description,
       event.kind,
+      event.venue,
+      event.promoter,
     ].join(' '),
   );
 
   let score = 0;
-  for (const [interestKey, keywords] of Object.entries(interestKeywordMap)) {
+  const keywordMap: Record<string, string[]> = {
+    diy: ['diy', 'zine', 'print', 'indie', 'underground'],
+    film: ['film', 'screening', 'arthouse', 'documentary', 'horror', 'cinema'],
+    zines: ['zine', 'print', 'art', 'collage'],
+    community: ['community', 'mutual aid', 'meetup', 'workshop', 'market'],
+    nightlife: ['nightlife', 'house', 'electronic', 'dance', 'club', 'dj'],
+    comedy: ['comedy', 'stand-up', 'improv', 'alt comedy'],
+    rock: ['rock', 'punk', 'metal', 'hardcore'],
+  };
+  for (const [interestKey, keywords] of Object.entries(keywordMap)) {
     if (!userTasteCorpus.includes(interestKey)) {
       continue;
     }
@@ -127,6 +139,9 @@ function eventRankScore(
   user: UserSetup,
   intent: IntentState,
   nowMs: number,
+  selectedScene: SceneModeId,
+  interactionBoost: number,
+  selectedVenue: string,
 ) {
   const userTasteCorpus = buildUserTasteCorpus(user);
   const affinityWeight = eventAffinityScore(event, userTasteCorpus);
@@ -135,6 +150,8 @@ function eventRankScore(
   const distanceWeight = Math.max(0, 0.52 - distanceMiles * 0.055);
   const recencyWeight = freshnessScore(event.startAtIso, nowMs);
   const moderationWeight = event.moderationStatus === 'accepted' ? 0.06 : -0.2;
+  const sceneWeight = selectedScene === 'auto' ? 0 : eventSceneScore(event, selectedScene) * 0.36;
+  const venueWeight = selectedVenue === event.venue ? 0.24 : 0;
   const roleWeight =
     user.role === 'concert_lover' && event.kind === 'concert'
       ? 0.1
@@ -149,9 +166,32 @@ function eventRankScore(
     distanceWeight +
     recencyWeight +
     moderationWeight +
+    sceneWeight +
+    venueWeight +
+    interactionBoost +
     roleWeight +
     intentPenalty(intent)
   );
+}
+
+function isTonightEvent(event: EventItem, nowMs: number) {
+  if (event.tags.some((tag) => tag.toLowerCase() === 'tonight')) {
+    return true;
+  }
+
+  const startMs = new Date(event.startAtIso).getTime();
+  if (Number.isNaN(startMs)) {
+    return false;
+  }
+
+  const diff = startMs - nowMs;
+  const threeHours = 3 * 60 * 60 * 1000;
+  const oneDay = 24 * 60 * 60 * 1000;
+  return diff >= -threeHours && diff <= oneDay;
+}
+
+function sceneLabel(scene: SceneModeId) {
+  return SCENE_MODES.find((item) => item.id === scene)?.label ?? 'Auto';
 }
 
 function stableNoise(seed: string) {
@@ -447,6 +487,9 @@ export function FeedScreen({
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const [cycleCount, setCycleCount] = useState(5);
+  const [sceneMode, setSceneMode] = useState<SceneModeId>('auto');
+  const [selectedVenue, setSelectedVenue] = useState<string>(ALL_VENUES_KEY);
+  const [tonightOnly, setTonightOnly] = useState(true);
   const [feedback, setFeedback] = useState('');
   const { width } = useWindowDimensions();
   const flyerHeight = Math.round(width * 1.25);
@@ -471,6 +514,49 @@ export function FeedScreen({
     };
   }, []);
 
+  const interactionProfile = useMemo(
+    () => buildInteractionProfile(events, interactions),
+    [events, interactions],
+  );
+  const autoScene = useMemo(() => topSceneFromProfile(interactionProfile), [interactionProfile]);
+  const activeScene = sceneMode === 'auto' && autoScene ? autoScene : sceneMode;
+
+  const topVenues = useMemo(() => {
+    const radiusMiles = radiusFilter === 'city' ? Infinity : radiusFilter;
+    const venueMap = new Map<
+      string,
+      { score: number; minDistance: number; social: number; interactions: number }
+    >();
+
+    for (const event of events) {
+      const distanceMiles = milesFromUserToEvent(userLocation, event);
+      if (distanceMiles > radiusMiles) {
+        continue;
+      }
+      const current = venueMap.get(event.venue) ?? {
+        score: 0,
+        minDistance: distanceMiles,
+        social: 0,
+        interactions: 0,
+      };
+      current.minDistance = Math.min(current.minDistance, distanceMiles);
+      current.social += event.friendInterested + event.friendGoing * 1.3;
+      if (interactions[event.id]) {
+        current.interactions += 1;
+      }
+      current.score =
+        current.social * 0.28 +
+        current.interactions * 1.2 +
+        Math.max(0, 5.2 - current.minDistance);
+      venueMap.set(event.venue, current);
+    }
+
+    return Array.from(venueMap.entries())
+      .sort((a, b) => b[1].score - a[1].score)
+      .slice(0, 6)
+      .map(([venue]) => venue);
+  }, [events, userLocation, radiusFilter, interactions]);
+
   const rankedEvents = useMemo(() => {
     const nowMs = Date.now();
     const withDistance = events.map((event) => {
@@ -478,13 +564,39 @@ export function FeedScreen({
       return {
         event,
         distanceMiles,
-        rankScore: eventRankScore(event, distanceMiles, user, interactions[event.id], nowMs),
+        rankScore: eventRankScore(
+          event,
+          distanceMiles,
+          user,
+          interactions[event.id],
+          nowMs,
+          activeScene,
+          eventPreferenceBoost(event, interactionProfile),
+          selectedVenue,
+        ),
       };
     });
 
     const radiusMiles = radiusFilter === 'city' ? Infinity : radiusFilter;
     const inRadius = withDistance.filter((item) => item.distanceMiles <= radiusMiles);
-    const source = inRadius.length > 0 ? inRadius : withDistance;
+    const radiusSource = inRadius.length > 0 ? inRadius : withDistance;
+
+    const tonightSource = tonightOnly
+      ? radiusSource.filter((item) => isTonightEvent(item.event, nowMs))
+      : radiusSource;
+    const afterTonight = tonightSource.length > 0 ? tonightSource : radiusSource;
+
+    const sceneFiltered =
+      activeScene === 'auto'
+        ? afterTonight
+        : afterTonight.filter((item) => eventMatchesScene(item.event, activeScene));
+    const afterScene = sceneFiltered.length > 0 ? sceneFiltered : afterTonight;
+
+    const venueFiltered =
+      selectedVenue === ALL_VENUES_KEY
+        ? afterScene
+        : afterScene.filter((item) => item.event.venue === selectedVenue);
+    const source = venueFiltered.length > 0 ? venueFiltered : afterScene;
 
     const sorted = source.sort((a, b) => {
       if (b.rankScore !== a.rankScore) {
@@ -494,7 +606,17 @@ export function FeedScreen({
     });
 
     return diversifyFeedOrder(sorted);
-  }, [events, userLocation, radiusFilter, user, interactions]);
+  }, [
+    events,
+    userLocation,
+    radiusFilter,
+    user,
+    interactions,
+    tonightOnly,
+    activeScene,
+    selectedVenue,
+    interactionProfile,
+  ]);
 
   const feedRows = useMemo(() => {
     const rows: FeedRow[] = [];
@@ -506,14 +628,16 @@ export function FeedScreen({
 
   useEffect(() => {
     setCycleCount(5);
-  }, [radiusFilter, rankedEvents.length]);
+  }, [radiusFilter, rankedEvents.length, sceneMode, selectedVenue, tonightOnly]);
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScreenBackdrop />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>For You</Text>
-        <Text style={styles.headerSub}>Discover - Commit - Coordinate in {user.city}</Text>
+        <Text style={styles.headerTitle}>{tonightOnly ? 'Tonight Near You' : 'For You'}</Text>
+        <Text style={styles.headerSub}>
+          Discover - Commit - Coordinate in {user.city} | Scene: {sceneLabel(activeScene)}
+        </Text>
 
         <View style={styles.modeRow}>
           <View style={styles.modeChip}>
@@ -525,6 +649,54 @@ export function FeedScreen({
           <View style={styles.modeChip}>
             <Text style={styles.modeChipLabel}>Coordinate</Text>
           </View>
+          <Pressable
+            onPress={() => setTonightOnly((prev) => !prev)}
+            style={[styles.modeChip, tonightOnly && styles.modeChipActive]}
+          >
+            <Text style={styles.modeChipLabel}>{tonightOnly ? 'Tonight On' : 'Tonight Off'}</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.sceneRow}>
+          {SCENE_MODES.map((mode) => {
+            const active = sceneMode === mode.id;
+            return (
+              <Pressable
+                key={mode.id}
+                onPress={() => setSceneMode(mode.id)}
+                style={[styles.sceneChip, active && styles.sceneChipActive]}
+              >
+                <Text style={[styles.sceneLabel, active && styles.sceneLabelActive]}>
+                  {mode.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View style={styles.venueRow}>
+          <Pressable
+            onPress={() => setSelectedVenue(ALL_VENUES_KEY)}
+            style={[styles.venueChip, selectedVenue === ALL_VENUES_KEY && styles.venueChipActive]}
+          >
+            <Text style={[styles.venueLabel, selectedVenue === ALL_VENUES_KEY && styles.venueLabelActive]}>
+              All Venues
+            </Text>
+          </Pressable>
+          {topVenues.map((venue) => {
+            const active = selectedVenue === venue;
+            return (
+              <Pressable
+                key={venue}
+                onPress={() => setSelectedVenue(venue)}
+                style={[styles.venueChip, active && styles.venueChipActive]}
+              >
+                <Text style={[styles.venueLabel, active && styles.venueLabelActive]}>
+                  {truncate(venue, 18)}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <View style={styles.radiusRow}>
@@ -633,6 +805,7 @@ const createStyles = (theme: ThemePalette) =>
   },
   modeRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
   },
   modeChip: {
@@ -643,12 +816,68 @@ const createStyles = (theme: ThemePalette) =>
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
+  modeChipActive: {
+    borderColor: theme.primary,
+    backgroundColor: theme.primary,
+  },
   modeChipLabel: {
     color: theme.text,
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
+  },
+  sceneRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  sceneChip: {
+    borderWidth: 1,
+    borderColor: '#ffffff21',
+    backgroundColor: '#ffffff09',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  sceneChipActive: {
+    borderColor: theme.primary,
+    backgroundColor: theme.primary,
+  },
+  sceneLabel: {
+    color: theme.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sceneLabelActive: {
+    color: theme.text,
+  },
+  venueRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  venueChip: {
+    borderWidth: 1,
+    borderColor: '#ffffff1f',
+    backgroundColor: '#ffffff08',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  venueChipActive: {
+    borderColor: theme.accentCool,
+    backgroundColor: '#2688c82b',
+  },
+  venueLabel: {
+    color: theme.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  venueLabelActive: {
+    color: theme.text,
   },
   radiusChip: {
     borderWidth: 1,
