@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { milesFromUserToEvent } from '../geo';
 import { ThemePalette, useAppTheme } from '../theme';
@@ -268,6 +269,7 @@ function FeedCard({
   onGetTickets,
   onFeedback,
   styles,
+  theme,
 }: {
   rankedEvent: RankedEvent;
   intent: IntentState;
@@ -280,6 +282,7 @@ function FeedCard({
   onGetTickets: () => Promise<void>;
   onFeedback: (message: string) => void;
   styles: ReturnType<typeof createStyles>;
+  theme: ThemePalette;
 }) {
   const { event, distanceMiles } = rankedEvent;
   const handle = socialHandleFromEvent(event);
@@ -350,45 +353,58 @@ function FeedCard({
               onToggleInterested();
               onFeedback(intent === 'interested' ? 'Interested removed' : 'Interested added');
             }}
-            style={[styles.actionBtn, intent === 'interested' && styles.actionBtnActive]}
+            style={styles.iconBtn}
+            accessibilityLabel="Interested"
           >
-            <Text style={styles.actionBtnLabel}>Interested</Text>
+            <Ionicons
+              name={intent === 'interested' ? 'heart' : 'heart-outline'}
+              size={22}
+              color={intent === 'interested' ? theme.accentWarm : theme.text}
+            />
           </Pressable>
           <Pressable
             onPress={() => {
               onSetGoing();
               onFeedback('You are going');
             }}
-            style={[styles.actionBtn, styles.actionBtnPrimary, intent === 'going' && styles.actionBtnPrimaryStrong]}
+            style={styles.iconBtn}
+            accessibilityLabel="Going"
           >
-            <Text style={styles.actionBtnPrimaryLabel}>Going</Text>
+            <Ionicons
+              name={intent === 'going' ? 'checkmark-circle' : 'checkmark-circle-outline'}
+              size={23}
+              color={intent === 'going' ? theme.positive : theme.text}
+            />
           </Pressable>
           <Pressable
             onPress={() => {
               onMessageFlyer();
               onFeedback('Opened DMs with flyer');
             }}
-            style={styles.actionBtn}
+            style={styles.iconBtn}
+            accessibilityLabel="Message flyer"
           >
-            <Text style={styles.actionBtnLabel}>DM</Text>
+            <Ionicons name="chatbubble-ellipses-outline" size={22} color={theme.text} />
           </Pressable>
           <Pressable
             onPress={() => {
               void onShareEvent('native');
               onFeedback('Share sheet opened');
             }}
-            style={styles.actionBtn}
+            style={styles.iconBtn}
+            accessibilityLabel="Share flyer"
           >
-            <Text style={styles.actionBtnLabel}>Share</Text>
+            <Ionicons name="paper-plane-outline" size={22} color={theme.text} />
           </Pressable>
           <Pressable
             onPress={() => {
               void onGetTickets();
               onFeedback('Opening ticket link');
             }}
-            style={styles.actionBtn}
+            style={styles.iconBtn}
+            accessibilityLabel="Get tickets"
           >
-            <Text style={styles.actionBtnLabel}>Tickets</Text>
+            <Ionicons name="ticket-outline" size={22} color={theme.text} />
           </Pressable>
         </View>
 
@@ -577,6 +593,7 @@ export function FeedScreen({
             onGetTickets={() => onGetTickets(item.rankedEvent.event)}
             onFeedback={showFeedback}
             styles={styles}
+            theme={theme}
           />
         )}
       />
@@ -782,39 +799,19 @@ const createStyles = (theme: ThemePalette) =>
   },
   actionRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
+    alignItems: 'center',
+    gap: 14,
     marginBottom: 2,
   },
-  actionBtn: {
-    minWidth: '31%',
-    backgroundColor: '#ffffff0e',
-    paddingVertical: 8,
+  iconBtn: {
+    width: 34,
+    height: 34,
     borderRadius: 999,
-    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ffffff24',
-  },
-  actionBtnActive: {
-    borderColor: '#ffffff66',
-    backgroundColor: '#ffffff1a',
-  },
-  actionBtnPrimary: {
-    backgroundColor: theme.primary,
-    borderColor: theme.primary,
-  },
-  actionBtnPrimaryStrong: {
-    borderColor: '#ffffffcc',
-  },
-  actionBtnLabel: {
-    color: theme.text,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  actionBtnPrimaryLabel: {
-    color: theme.text,
-    fontSize: 11,
-    fontWeight: '700',
+    borderColor: '#ffffff20',
+    backgroundColor: '#ffffff08',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   postFooterRow: {
     flexDirection: 'row',
