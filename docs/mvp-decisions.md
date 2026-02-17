@@ -44,6 +44,7 @@ Interaction rules:
 
 ## 4. Feed and Discovery Defaults
 
+- Logged-in Home defaults to `Map` mode with `Map | Flyer Feed` toggle.
 - Default ranking: local-first + upcoming events.
 - Default radius: `15 miles` around user location.
 - Radius fallback when supply is low: expand to `35 miles`.
@@ -54,6 +55,11 @@ Required feed labels on cards:
 - distance (`2.1 mi`)
 - time relevance (`Tonight`, `Tomorrow`)
 - neighborhood (`East Austin`)
+
+Map defaults:
+- draggable city map with tappable event pins
+- `Search this area` action after map drag
+- color-coded pins by event type
 
 ## 5. Profile Model (MVP)
 

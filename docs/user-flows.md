@@ -14,6 +14,18 @@
 Success condition:
 - User takes first intent action in first session.
 
+## Flow 1B: Home Map Discovery
+
+1. User lands on Home in `Map` mode.
+2. User drags map to neighborhood of interest.
+3. App shows `Search this area`.
+4. User taps button and sees refreshed nearby pins.
+5. User taps a colored pin and opens quick action sheet.
+6. User taps `Interested`, `Going`, `Share`, or `Get Tickets`.
+
+Success condition:
+- User discovers and acts on local events directly from map.
+
 ## Flow 2: Feed Scroll -> Event Detail -> Ticket
 
 1. User scrolls vertical flyer feed.

@@ -21,6 +21,10 @@ Main tabs:
 - `Upload`
 - `Profile`
 
+Home presentation:
+- `Feed` tab includes `Map | Flyer Feed` toggle.
+- Default mode is map-first for logged-in users.
+
 ## 3. Feed Scrolling System (Core)
 
 Implementation:
@@ -45,6 +49,12 @@ Card actions:
 - `Going` button -> set `going`.
 - `Share` button -> native share sheet.
 - Card tap -> `EventDetail`.
+
+Map mode behavior:
+- Draggable city viewport with local event pins.
+- Pin color system by event type.
+- `Search this area` refresh pattern after drag.
+- Pin tap opens quick-action sheet.
 
 ## 4. Profile System (Core)
 

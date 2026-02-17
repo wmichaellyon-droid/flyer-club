@@ -5,6 +5,7 @@ export type IntentState = 'interested' | 'going' | 'saved' | undefined;
 export type IntentFilter = 'Interested' | 'Going' | 'Saved';
 
 export type UserRole = 'concert_lover' | 'event_enjoyer' | 'promoter';
+export type EventKind = 'concert' | 'film' | 'meetup' | 'comedy' | 'arts';
 
 export interface EventItem {
   id: string;
@@ -24,6 +25,9 @@ export interface EventItem {
   ticketUrl: string;
   flyerImageUrl: string;
   heroColor: string;
+  latitude: number;
+  longitude: number;
+  kind: EventKind;
   friendInterested: number;
   friendGoing: number;
   postedByRole: UserRole;
