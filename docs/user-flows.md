@@ -48,14 +48,15 @@ Success condition:
 Success condition:
 - Shared flyer leads to install/signup + event view.
 
-## Flow 5: Promoter Upload and Moderation
+## Flow 5: Community Upload and Moderation
 
-1. Promoter opens `Upload`.
-2. Promoter adds flyer image and event metadata.
+1. User opens `Upload`.
+2. User adds flyer image and event metadata.
 3. AI classifies image as flyer or non-flyer.
 4. If high confidence flyer: post published.
 5. If medium confidence: queued for manual review.
-6. If reject: promoter receives reason and retry guidance.
+6. If reject: uploader receives reason and retry guidance.
+7. If uploader role is promoter: post gets promoter distribution weighting after approval.
 
 Success condition:
 - High-quality flyer supply enters feed with low spam.

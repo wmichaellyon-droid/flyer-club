@@ -38,6 +38,7 @@ Behavior:
 - event start time proximity
 - social velocity
 - friend proof
+- uploader role weighting (promoter boost after approval)
 
 Card actions:
 - Double tap -> toggle `Interested`.
@@ -91,6 +92,7 @@ Core entities:
 ## 8. Security/Moderation Baselines
 
 - Only verified authenticated users can upload.
+- Upload permission applies to all verified roles (community-first).
 - AI moderation gate before publish.
 - Manual review queue for uncertain uploads.
 - Event report action on detail screen.

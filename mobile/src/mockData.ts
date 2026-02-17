@@ -56,6 +56,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     heroColor: '#3a1b53',
     friendInterested: 9,
     friendGoing: 4,
+    postedByRole: 'event_enjoyer',
   },
   {
     id: 'evt_2',
@@ -77,6 +78,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     heroColor: '#23324d',
     friendInterested: 6,
     friendGoing: 2,
+    postedByRole: 'promoter',
   },
   {
     id: 'evt_3',
@@ -98,6 +100,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     heroColor: '#5f2e2c',
     friendInterested: 12,
     friendGoing: 5,
+    postedByRole: 'promoter',
   },
   {
     id: 'evt_4',
@@ -119,6 +122,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     heroColor: '#2d4b3d',
     friendInterested: 4,
     friendGoing: 2,
+    postedByRole: 'event_enjoyer',
   },
   {
     id: 'evt_5',
@@ -140,6 +144,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     heroColor: '#4b245c',
     friendInterested: 8,
     friendGoing: 2,
+    postedByRole: 'promoter',
   },
   {
     id: 'evt_6',
@@ -161,6 +166,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     heroColor: '#214442',
     friendInterested: 7,
     friendGoing: 3,
+    postedByRole: 'concert_lover',
   },
   {
     id: 'evt_7',
@@ -182,6 +188,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     heroColor: '#3c3f66',
     friendInterested: 5,
     friendGoing: 1,
+    postedByRole: 'event_enjoyer',
   },
   {
     id: 'evt_8',
@@ -203,5 +210,6 @@ export const AUSTIN_EVENTS: EventItem[] = [
     heroColor: '#6b5130',
     friendInterested: 10,
     friendGoing: 4,
+    postedByRole: 'promoter',
   },
 ];

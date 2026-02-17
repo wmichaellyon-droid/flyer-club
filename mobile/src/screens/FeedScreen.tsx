@@ -27,6 +27,13 @@ interface FeedRow {
   event: EventItem;
 }
 
+function eventRankScore(event: EventItem) {
+  const promoterWeight = event.postedByRole === 'promoter' ? 0.25 : 0;
+  const socialWeight = event.friendInterested * 0.02 + event.friendGoing * 0.03;
+  const distanceWeight = Math.max(0, 0.4 - event.distanceMiles * 0.03);
+  return promoterWeight + socialWeight + distanceWeight;
+}
+
 function buildFeedChunk(events: EventItem[], chunkIndex: number): FeedRow[] {
   if (events.length === 0) {
     return [];
@@ -130,6 +137,9 @@ function FeedCard({
 
       <View style={styles.infoPanel}>
         <Text style={styles.infoTitle}>{event.title}</Text>
+        <Text style={styles.infoRole}>
+          {event.postedByRole === 'promoter' ? 'Promoter post' : 'Community post'}
+        </Text>
         <Text style={styles.infoTime}>
           {event.dateLabel} - {event.timeLabel}
         </Text>
@@ -175,13 +185,17 @@ export function FeedScreen({
   const [chunkCount, setChunkCount] = useState(3);
   const { height } = useWindowDimensions();
   const flyerHeight = Math.max(height - 220, 460);
+  const rankedEvents = useMemo(
+    () => [...events].sort((a, b) => eventRankScore(b) - eventRankScore(a)),
+    [events],
+  );
   const feedRows = useMemo(() => {
     const rows: FeedRow[] = [];
     for (let chunk = 0; chunk < chunkCount; chunk += 1) {
-      rows.push(...buildFeedChunk(events, chunk));
+      rows.push(...buildFeedChunk(rankedEvents, chunk));
     }
     return rows;
-  }, [events, chunkCount]);
+  }, [rankedEvents, chunkCount]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -197,7 +211,7 @@ export function FeedScreen({
         showsVerticalScrollIndicator={false}
         onEndReachedThreshold={0.6}
         onEndReached={() => {
-          if (events.length > 0) {
+          if (rankedEvents.length > 0) {
             setChunkCount((prev) => prev + 1);
           }
         }}
@@ -363,6 +377,11 @@ const styles = StyleSheet.create({
     color: theme.text,
     fontSize: 13,
     fontWeight: '600',
+  },
+  infoRole: {
+    color: theme.primary,
+    fontSize: 12,
+    fontWeight: '700',
   },
   infoVenue: {
     color: theme.textMuted,

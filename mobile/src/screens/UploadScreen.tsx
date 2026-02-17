@@ -28,6 +28,12 @@ const promoterTools = [
   'Audience share links',
 ];
 
+const communityRules = [
+  'Anyone can upload flyers',
+  'Only flyer-format posts pass moderation',
+  'High-quality flyers get ranked higher',
+];
+
 interface UploadScreenProps {
   userRole: UserRole;
 }
@@ -52,12 +58,23 @@ export function UploadScreen({ userRole }: UploadScreenProps) {
         <Text style={styles.title}>Upload</Text>
         <Text style={styles.subtitle}>
           {isPromoter
-            ? 'Promoter tools for publishing and managing flyers.'
-            : 'Switch to a promoter profile to publish flyers and access creator tools.'}
+            ? 'Community uploads are open to all. Promoters get extra distribution and tools.'
+            : 'Community uploads are open to all users. Promoters unlock extra distribution tools.'}
         </Text>
 
         <View style={styles.toolCard}>
-          <Text style={styles.toolTitle}>Promoter Toolset</Text>
+          <Text style={styles.toolTitle}>Community Posting Rules</Text>
+          <View style={styles.toolList}>
+            {communityRules.map((tool) => (
+              <Text key={tool} style={styles.toolItem}>
+                - {tool}
+              </Text>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.toolCard}>
+          <Text style={styles.toolTitle}>Promoter Extras</Text>
           <View style={styles.toolList}>
             {promoterTools.map((tool) => (
               <Text key={tool} style={styles.toolItem}>
@@ -65,6 +82,9 @@ export function UploadScreen({ userRole }: UploadScreenProps) {
               </Text>
             ))}
           </View>
+          <Text style={styles.roleHint}>
+            {isPromoter ? 'Boost active: promoter distribution weighting enabled.' : 'Use promoter role for boosted distribution and management tools.'}
+          </Text>
         </View>
 
         <View style={styles.form}>
@@ -74,7 +94,6 @@ export function UploadScreen({ userRole }: UploadScreenProps) {
             placeholderTextColor={theme.textMuted}
             value={flyerUrl}
             onChangeText={setFlyerUrl}
-            editable={isPromoter}
           />
           <TextInput
             style={styles.input}
@@ -82,7 +101,6 @@ export function UploadScreen({ userRole }: UploadScreenProps) {
             placeholderTextColor={theme.textMuted}
             value={eventTitle}
             onChangeText={setEventTitle}
-            editable={isPromoter}
           />
           <TextInput
             style={styles.input}
@@ -90,12 +108,11 @@ export function UploadScreen({ userRole }: UploadScreenProps) {
             placeholderTextColor={theme.textMuted}
             value={venue}
             onChangeText={setVenue}
-            editable={isPromoter}
           />
         </View>
 
-        <Pressable onPress={onSubmit} style={[styles.submitBtn, !isPromoter && styles.submitBtnDisabled]}>
-          <Text style={styles.submitBtnLabel}>{isPromoter ? 'Submit Flyer' : 'Promoter Profile Required'}</Text>
+        <Pressable onPress={onSubmit} style={styles.submitBtn}>
+          <Text style={styles.submitBtnLabel}>Submit Flyer</Text>
         </Pressable>
 
         <View style={styles.statusCard}>
@@ -180,6 +197,11 @@ const styles = StyleSheet.create({
     color: theme.textMuted,
     fontSize: 12,
   },
+  roleHint: {
+    color: theme.primary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
   form: {
     gap: 8,
     marginTop: 6,
@@ -198,9 +220,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
-  },
-  submitBtnDisabled: {
-    opacity: 0.45,
   },
   submitBtnLabel: {
     color: theme.text,

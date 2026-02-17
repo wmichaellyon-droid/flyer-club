@@ -25,6 +25,7 @@ export interface EventItem {
   heroColor: string;
   friendInterested: number;
   friendGoing: number;
+  postedByRole: UserRole;
 }
 
 export interface UserSetup {

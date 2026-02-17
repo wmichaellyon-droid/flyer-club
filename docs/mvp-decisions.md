@@ -33,7 +33,8 @@ During onboarding, every user selects one profile type:
 - `Event Enjoyer`
 - `Promoter`
 
-Promoter accounts get promoter-specific profile sections and upload tools.
+All profile types can upload flyers.
+Promoter accounts get promoter-specific profile sections, management tools, and distribution weighting.
 
 Interaction rules:
 - Double tap on feed flyer toggles `Interested`.
@@ -73,6 +74,14 @@ Other profile sections:
 - Show social proof on events when available:
 - `X friends interested`
 - `Y friends going`
+
+## 6.1 Community Posting Model (MVP)
+
+- Flyer uploads are open to all users (community-first supply).
+- Promoter role receives:
+- creator toolset
+- profile-level promoter panels
+- ranking/distribution boost after moderation approval
 
 ## 7. Trust and Moderation Scope (MVP)
 

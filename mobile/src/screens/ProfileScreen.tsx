@@ -45,6 +45,7 @@ export function ProfileScreen({ user, events, interactions, onOpenEvent, onSetIn
         <Text style={styles.handle}>@austin.scenes</Text>
         <Text style={styles.city}>{user.city}</Text>
         <Text style={styles.roleBadge}>{roleLabel(user.role)}</Text>
+        <Text style={styles.communityHint}>Community posting is open to everyone in Upload.</Text>
 
         {isPromoter ? (
           <>
@@ -75,6 +76,7 @@ export function ProfileScreen({ user, events, interactions, onOpenEvent, onSetIn
               <Text style={styles.promoterPanelTitle}>Promoter Queue</Text>
               <Text style={styles.promoterPanelText}>2 flyers in AI review, 1 draft missing venue details.</Text>
             </View>
+            <Text style={styles.promoterBoostText}>Distribution boost active on newly approved flyers.</Text>
           </>
         ) : (
           <>
@@ -187,6 +189,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: theme.surfaceAlt,
   },
+  communityHint: {
+    color: theme.textMuted,
+    fontSize: 12,
+    marginTop: 2,
+  },
   statsRow: {
     flexDirection: 'row',
     gap: 8,
@@ -278,6 +285,11 @@ const styles = StyleSheet.create({
   promoterPanelText: {
     color: theme.textMuted,
     fontSize: 12,
+  },
+  promoterBoostText: {
+    color: theme.primary,
+    fontSize: 12,
+    fontWeight: '600',
   },
   eventRow: {
     backgroundColor: theme.surface,

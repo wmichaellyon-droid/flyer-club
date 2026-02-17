@@ -119,13 +119,14 @@ Analytics events:
 ## 5. Upload
 
 Goal:
-- Let promoters submit events fast with quality guardrails.
+- Let the community submit events while preserving strict flyer quality.
 
 Key UI blocks:
 - Flyer upload control.
 - Event metadata form.
 - AI moderation status (`Analyzing`, `Approved`, `Needs Review`, `Rejected`).
-- If non-promoter: locked state with prompt to switch to promoter profile.
+- Community posting rules.
+- Promoter extras panel (analytics/management/distribution boost).
 
 Primary actions:
 - Upload flyer
