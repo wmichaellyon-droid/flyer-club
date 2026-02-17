@@ -4,11 +4,11 @@ import {
   Pressable,
   SafeAreaView,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { shareEvent, shareEventBySms } from '../share';
 import { theme } from '../theme';
 import { EventItem, IntentState } from '../types';
 
@@ -28,10 +28,11 @@ export function EventDetailScreen({
   onSetGoing,
 }: EventDetailScreenProps) {
   const onShare = async () => {
-    await Share.share({
-      message: `${event.title} at ${event.venue}.`,
-      url: event.ticketUrl,
-    });
+    await shareEvent(event);
+  };
+
+  const onShareText = async () => {
+    await shareEventBySms(event);
   };
 
   const onGetTickets = async () => {
@@ -76,6 +77,9 @@ export function EventDetailScreen({
           </Pressable>
           <Pressable onPress={onShare} style={styles.actionBtn}>
             <Text style={styles.actionLabel}>Share</Text>
+          </Pressable>
+          <Pressable onPress={onShareText} style={styles.actionBtn}>
+            <Text style={styles.actionLabel}>Text</Text>
           </Pressable>
         </View>
 
@@ -189,11 +193,13 @@ const styles = StyleSheet.create({
   },
   rowActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
+    justifyContent: 'space-between',
     marginHorizontal: 12,
   },
   actionBtn: {
-    flex: 1,
+    width: '48%',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 11,

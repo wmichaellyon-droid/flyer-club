@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
-import { useMemo, useState } from 'react';
-import { SafeAreaView, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Linking, SafeAreaView, StyleSheet, View } from 'react-native';
 import { BottomNav } from './src/components/BottomNav';
 import { AUSTIN_EVENTS, DEFAULT_USER } from './src/mockData';
 import { EventDetailScreen } from './src/screens/EventDetailScreen';
@@ -10,6 +10,7 @@ import { LoginScreen } from './src/screens/LoginScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { UploadScreen } from './src/screens/UploadScreen';
+import { parseSharedEventId } from './src/share';
 import { theme } from './src/theme';
 import { EventTasteAnswers, InteractionMap, IntentState, TabKey, UserSetup } from './src/types';
 
@@ -71,11 +72,61 @@ export default function App() {
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('Feed');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [pendingSharedEventId, setPendingSharedEventId] = useState<string | null>(null);
   const [user, setUser] = useState<UserSetup>(DEFAULT_USER);
   const [interactions, setInteractions] = useState<InteractionMap>({
     evt_1: 'interested',
     evt_3: 'going',
   });
+  const authStateRef = useRef({ loginComplete, onboardingComplete });
+
+  authStateRef.current = { loginComplete, onboardingComplete };
+
+  useEffect(() => {
+    const openFromUrl = (url: string) => {
+      const eventId = parseSharedEventId(url);
+      if (!eventId) {
+        return;
+      }
+
+      const eventExists = AUSTIN_EVENTS.some((event) => event.id === eventId);
+      if (!eventExists) {
+        return;
+      }
+
+      if (authStateRef.current.loginComplete && authStateRef.current.onboardingComplete) {
+        setSelectedEventId(eventId);
+        return;
+      }
+
+      setPendingSharedEventId(eventId);
+    };
+
+    Linking.getInitialURL()
+      .then((initialUrl) => {
+        if (initialUrl) {
+          openFromUrl(initialUrl);
+        }
+      })
+      .catch(() => undefined);
+
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      openFromUrl(url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!pendingSharedEventId || !loginComplete || !onboardingComplete) {
+      return;
+    }
+
+    setSelectedEventId(pendingSharedEventId);
+    setPendingSharedEventId(null);
+  }, [pendingSharedEventId, loginComplete, onboardingComplete]);
 
   const selectedEvent = useMemo(
     () => AUSTIN_EVENTS.find((event) => event.id === selectedEventId) ?? null,

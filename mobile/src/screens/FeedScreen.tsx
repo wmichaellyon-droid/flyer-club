@@ -6,13 +6,13 @@ import {
   PanResponder,
   Pressable,
   SafeAreaView,
-  Share,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from 'react-native';
 import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND, EXPLORE_FILTERS } from '../mockData';
+import { shareEvent, shareEventBySms } from '../share';
 import { theme } from '../theme';
 import { EventItem, EventKind, InteractionMap, IntentState, UserSetup } from '../types';
 
@@ -150,10 +150,11 @@ function FeedCard({
   };
 
   const onShare = async () => {
-    await Share.share({
-      message: `${event.title} at ${event.venue} in ${event.neighborhood}.`,
-      url: event.ticketUrl,
-    });
+    await shareEvent(event);
+  };
+
+  const onShareText = async () => {
+    await shareEventBySms(event);
   };
 
   const onGetTickets = async () => {
@@ -213,6 +214,9 @@ function FeedCard({
           </Pressable>
           <Pressable onPress={onShare} style={styles.actionBtn}>
             <Text style={styles.actionBtnLabel}>Share</Text>
+          </Pressable>
+          <Pressable onPress={onShareText} style={styles.actionBtn}>
+            <Text style={styles.actionBtnLabel}>Text</Text>
           </Pressable>
           <Pressable onPress={onGetTickets} style={styles.actionBtn}>
             <Text style={styles.actionBtnLabel}>Get Tickets</Text>
@@ -307,10 +311,11 @@ function MapHome({
   );
 
   const onShare = async (event: EventItem) => {
-    await Share.share({
-      message: `${event.title} at ${event.venue} in ${event.neighborhood}.`,
-      url: event.ticketUrl,
-    });
+    await shareEvent(event);
+  };
+
+  const onShareText = async (event: EventItem) => {
+    await shareEventBySms(event);
   };
 
   const onGetTickets = async (event: EventItem) => {
@@ -502,6 +507,9 @@ function MapHome({
             </Pressable>
             <Pressable onPress={() => onShare(selectedEvent)} style={styles.mapActionBtn}>
               <Text style={styles.mapActionLabel}>Share</Text>
+            </Pressable>
+            <Pressable onPress={() => onShareText(selectedEvent)} style={styles.mapActionBtn}>
+              <Text style={styles.mapActionLabel}>Text</Text>
             </Pressable>
             <Pressable onPress={() => onGetTickets(selectedEvent)} style={styles.mapActionBtn}>
               <Text style={styles.mapActionLabel}>Get Tickets</Text>
@@ -862,7 +870,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   mapActionBtn: {
-    minWidth: '47%',
+    minWidth: '31%',
     borderWidth: 1,
     borderColor: '#ffffff30',
     backgroundColor: '#ffffff10',
@@ -1048,7 +1056,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   actionBtn: {
-    minWidth: '47%',
+    minWidth: '31%',
     backgroundColor: '#ffffff0e',
     paddingVertical: 8,
     borderRadius: 999,

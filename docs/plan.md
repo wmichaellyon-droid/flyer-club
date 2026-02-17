@@ -205,3 +205,4 @@ Detect whether uploaded content is an event flyer with high precision.
 - Six-screen spec: `docs/screen-spec-v1.md`
 - Technical framework: `docs/app-framework.md`
 - Flyer-only upload moderation guardrails: `docs/flyer-upload-guardrails.md`
+- Share links and SMS preview setup: `docs/share-links.md`
