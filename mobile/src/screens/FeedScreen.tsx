@@ -1,11 +1,13 @@
 import { useMemo, useRef, useState } from 'react';
 import {
   FlatList,
+  Linking,
   Pressable,
   SafeAreaView,
   Share,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { theme } from '../theme';
@@ -53,12 +55,14 @@ function intentLabel(intent: IntentState) {
 function FeedCard({
   event,
   intent,
+  flyerHeight,
   onOpenEvent,
   onToggleInterested,
   onSetGoing,
 }: {
   event: EventItem;
   intent: IntentState;
+  flyerHeight: number;
   onOpenEvent: () => void;
   onToggleInterested: () => void;
   onSetGoing: () => void;
@@ -93,23 +97,45 @@ function FeedCard({
     });
   };
 
+  const onGetTickets = async () => {
+    await Linking.openURL(event.ticketUrl);
+  };
+
   return (
-    <Pressable onPress={onCardTap} style={[styles.card, { backgroundColor: event.heroColor }]}>
-      <View style={styles.cardOverlay}>
-        <View style={styles.badgeRow}>
-          <Text style={styles.badge}>{event.category}</Text>
-          <Text style={styles.badgeMuted}>{event.ageRating}</Text>
+    <View style={styles.postWrap}>
+      <Pressable
+        onPress={onCardTap}
+        style={[styles.flyerStage, { backgroundColor: event.heroColor, height: flyerHeight }]}
+      >
+        <View style={styles.flyerGrainA} />
+        <View style={styles.flyerGrainB} />
+        <View style={styles.flyerOverlay}>
+          <View style={styles.badgeRow}>
+            <Text style={styles.badge}>{event.category}</Text>
+            <Text style={styles.badgeMuted}>{event.ageRating}</Text>
+          </View>
+
+          <View style={styles.flyerContent}>
+            <Text style={styles.flyerTitle}>{event.title}</Text>
+            <Text style={styles.flyerMeta}>{event.promoter}</Text>
+            <View style={styles.localRow}>
+              <Text style={styles.localBadge}>{event.tags[0] ?? 'Soon'}</Text>
+              <Text style={styles.localBadge}>{event.distanceMiles.toFixed(1)} mi</Text>
+              <Text style={styles.localBadge}>{event.neighborhood}</Text>
+            </View>
+            <Text style={styles.flyerHint}>Double tap flyer for Interested</Text>
+          </View>
         </View>
+      </Pressable>
 
-        <Text style={styles.cardTitle}>{event.title}</Text>
-        <Text style={styles.cardMeta}>{event.promoter}</Text>
-
-        <View style={styles.localRow}>
-          <Text style={styles.localBadge}>{event.tags[0] ?? 'Soon'}</Text>
-          <Text style={styles.localBadge}>{event.distanceMiles.toFixed(1)} mi</Text>
-          <Text style={styles.localBadge}>{event.neighborhood}</Text>
-        </View>
-
+      <View style={styles.infoPanel}>
+        <Text style={styles.infoTitle}>{event.title}</Text>
+        <Text style={styles.infoTime}>
+          {event.dateLabel} - {event.timeLabel}
+        </Text>
+        <Text style={styles.infoVenue}>
+          {event.venue} - {event.address}
+        </Text>
         <Text style={styles.socialProof}>
           {event.friendGoing} friends going, {event.friendInterested} interested
         </Text>
@@ -124,11 +150,17 @@ function FeedCard({
           <Pressable onPress={onShare} style={styles.actionBtn}>
             <Text style={styles.actionBtnLabel}>Share</Text>
           </Pressable>
+          <Pressable onPress={onGetTickets} style={styles.actionBtn}>
+            <Text style={styles.actionBtnLabel}>Get Tickets</Text>
+          </Pressable>
         </View>
 
         <Text style={styles.intentText}>Current: {intentLabel(intent)}</Text>
+        <Pressable onPress={onOpenEvent} style={styles.openBtn}>
+          <Text style={styles.openBtnLabel}>Open full event page</Text>
+        </Pressable>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -141,6 +173,8 @@ export function FeedScreen({
   onSetGoing,
 }: FeedScreenProps) {
   const [chunkCount, setChunkCount] = useState(3);
+  const { height } = useWindowDimensions();
+  const flyerHeight = Math.max(height - 220, 460);
   const feedRows = useMemo(() => {
     const rows: FeedRow[] = [];
     for (let chunk = 0; chunk < chunkCount; chunk += 1) {
@@ -152,8 +186,8 @@ export function FeedScreen({
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Feed</Text>
-        <Text style={styles.headerSub}>Trending in {user.city}</Text>
+        <Text style={styles.headerTitle}>Flyer Stream</Text>
+        <Text style={styles.headerSub}>Indie events across {user.city}</Text>
       </View>
 
       <FlatList
@@ -161,9 +195,6 @@ export function FeedScreen({
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        decelerationRate="fast"
-        snapToAlignment="start"
-        snapToInterval={350}
         onEndReachedThreshold={0.6}
         onEndReached={() => {
           if (events.length > 0) {
@@ -175,6 +206,7 @@ export function FeedScreen({
           <FeedCard
             event={item.event}
             intent={interactions[item.event.id]}
+            flyerHeight={flyerHeight}
             onOpenEvent={() => onOpenEvent(item.event.id)}
             onToggleInterested={() => onToggleInterested(item.event.id)}
             onSetGoing={() => onSetGoing(item.event.id)}
@@ -207,8 +239,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 20,
-    paddingHorizontal: 12,
-    gap: 14,
+    paddingHorizontal: 10,
+    gap: 20,
   },
   footerText: {
     color: theme.textMuted,
@@ -216,26 +248,64 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 10,
   },
-  card: {
-    height: 330,
-    borderRadius: 18,
+  postWrap: {
+    borderRadius: 22,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#ffffff30',
+    borderColor: '#ffffff24',
+    backgroundColor: theme.surface,
   },
-  cardOverlay: {
+  flyerStage: {
+    width: '100%',
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     padding: 14,
-    backgroundColor: '#00000050',
-    gap: 8,
+  },
+  flyerOverlay: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  flyerGrainA: {
+    position: 'absolute',
+    width: 280,
+    height: 280,
+    borderRadius: 999,
+    top: -60,
+    right: -30,
+    backgroundColor: '#ffffff10',
+  },
+  flyerGrainB: {
+    position: 'absolute',
+    width: 240,
+    height: 240,
+    borderRadius: 999,
+    bottom: 90,
+    left: -80,
+    backgroundColor: '#00000030',
+  },
+  flyerContent: {
+    gap: 10,
+    paddingBottom: 14,
+  },
+  flyerTitle: {
+    color: theme.text,
+    fontWeight: '900',
+    fontSize: 42,
+    lineHeight: 46,
+    maxWidth: '94%',
+  },
+  flyerMeta: {
+    color: '#fff6ffcc',
+    fontSize: 13,
+    fontWeight: '700',
   },
   badgeRow: {
     flexDirection: 'row',
     gap: 8,
+    paddingTop: 2,
   },
   badge: {
-    backgroundColor: theme.primary,
+    backgroundColor: '#00000055',
     color: theme.text,
     fontSize: 11,
     fontWeight: '700',
@@ -246,7 +316,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   badgeMuted: {
-    backgroundColor: '#ffffff20',
+    backgroundColor: '#0000003d',
     color: theme.text,
     fontSize: 11,
     fontWeight: '700',
@@ -256,16 +326,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     textTransform: 'uppercase',
   },
-  cardTitle: {
-    color: theme.text,
-    fontWeight: '800',
-    fontSize: 27,
-  },
-  cardMeta: {
-    color: '#f2e9ffcc',
-    fontSize: 13,
-    fontWeight: '600',
-  },
   localRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -273,8 +333,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   localBadge: {
-    backgroundColor: '#ffffff15',
-    borderColor: '#ffffff25',
+    backgroundColor: '#00000038',
+    borderColor: '#ffffff3b',
     borderWidth: 1,
     borderRadius: 999,
     color: theme.text,
@@ -283,24 +343,50 @@ const styles = StyleSheet.create({
     fontSize: 11,
     overflow: 'hidden',
   },
+  flyerHint: {
+    color: '#f8f0ffc0',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  infoPanel: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 7,
+    backgroundColor: theme.surface,
+  },
+  infoTitle: {
+    color: theme.text,
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  infoTime: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  infoVenue: {
+    color: theme.textMuted,
+    fontSize: 12,
+  },
   socialProof: {
-    color: '#f8efffcc',
+    color: '#f8efffd4',
     fontSize: 12,
     marginTop: 2,
   },
   actionRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     marginTop: 6,
   },
   actionBtn: {
-    flex: 1,
-    backgroundColor: '#ffffff17',
+    minWidth: '47%',
+    backgroundColor: '#ffffff0e',
     paddingVertical: 8,
     borderRadius: 999,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ffffff30',
+    borderColor: '#ffffff24',
   },
   actionBtnPrimary: {
     backgroundColor: theme.primary,
@@ -320,5 +406,19 @@ const styles = StyleSheet.create({
     color: '#f8efffb3',
     fontSize: 11,
     marginTop: 2,
+  },
+  openBtn: {
+    marginTop: 2,
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  openBtnLabel: {
+    color: theme.primary,
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

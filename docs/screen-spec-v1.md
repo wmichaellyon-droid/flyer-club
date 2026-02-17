@@ -31,10 +31,11 @@ Goal:
 - Drive rapid discovery and intent actions.
 
 Key UI blocks:
-- Vertical flyer cards.
+- Vertical flyer posts with full-screen flyer stage first.
+- Event info panel lives below each flyer and appears as user scrolls down.
 - Local relevance badges (`distance`, `Tonight/Tomorrow`, neighborhood).
 - Social proof line (`friends interested/going`).
-- Inline actions: Interested, Going, Share.
+- Inline actions: Interested, Going, Share, Get Tickets.
 
 Primary actions:
 - Double tap flyer -> Interested
