@@ -1,4 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
+import * as Location from 'expo-location';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, SafeAreaView, StyleSheet, View } from 'react-native';
 import { BottomNav } from './src/components/BottomNav';
@@ -7,12 +8,18 @@ import { EventDetailScreen } from './src/screens/EventDetailScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { FeedScreen } from './src/screens/FeedScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
+import { MapScreen } from './src/screens/MapScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { UploadScreen } from './src/screens/UploadScreen';
 import { parseSharedEventId } from './src/share';
 import { theme } from './src/theme';
-import { EventTasteAnswers, InteractionMap, IntentState, TabKey, UserSetup } from './src/types';
+import { EventTasteAnswers, InteractionMap, IntentState, TabKey, UserLocation, UserSetup } from './src/types';
+
+const AUSTIN_CENTER: UserLocation = {
+  latitude: 30.2672,
+  longitude: -97.7431,
+};
 
 function setIntentInMap(
   current: InteractionMap,
@@ -74,6 +81,7 @@ export default function App() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [pendingSharedEventId, setPendingSharedEventId] = useState<string | null>(null);
   const [user, setUser] = useState<UserSetup>(DEFAULT_USER);
+  const [userLocation, setUserLocation] = useState<UserLocation>(AUSTIN_CENTER);
   const [interactions, setInteractions] = useState<InteractionMap>({
     evt_1: 'interested',
     evt_3: 'going',
@@ -127,6 +135,44 @@ export default function App() {
     setSelectedEventId(pendingSharedEventId);
     setPendingSharedEventId(null);
   }, [pendingSharedEventId, loginComplete, onboardingComplete]);
+
+  useEffect(() => {
+    if (!loginComplete || !onboardingComplete) {
+      return;
+    }
+
+    let active = true;
+    (async () => {
+      const currentPermission = await Location.getForegroundPermissionsAsync();
+      let granted = currentPermission.status === 'granted';
+
+      if (!granted) {
+        const request = await Location.requestForegroundPermissionsAsync();
+        granted = request.status === 'granted';
+      }
+
+      if (!granted || !active) {
+        return;
+      }
+
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      if (!active) {
+        return;
+      }
+
+      setUserLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+    })().catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
+  }, [loginComplete, onboardingComplete]);
 
   const selectedEvent = useMemo(
     () => AUSTIN_EVENTS.find((event) => event.id === selectedEventId) ?? null,
@@ -216,9 +262,23 @@ export default function App() {
             events={AUSTIN_EVENTS}
             interactions={interactions}
             user={user}
+            userLocation={userLocation}
             onOpenEvent={onOpenEvent}
             onToggleInterested={onToggleInterested}
             onSetGoing={onSetGoing}
+          />
+        )}
+
+        {activeTab === 'Map' && (
+          <MapScreen
+            events={AUSTIN_EVENTS}
+            interactions={interactions}
+            user={user}
+            userLocation={userLocation}
+            onOpenEvent={onOpenEvent}
+            onToggleInterested={onToggleInterested}
+            onSetGoing={onSetGoing}
+            onUpdateUserLocation={setUserLocation}
           />
         )}
 

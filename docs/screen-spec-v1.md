@@ -65,11 +65,6 @@ Goal:
 - Drive rapid discovery and intent actions.
 
 Key UI blocks:
-- Home toggle: `Map` and `Flyer Feed`.
-- Map mode with draggable city viewport.
-- Color-coded event pins by type (concert, film, meetup/community, comedy, arts/theater).
-- Kind filters with subcategory drill-down (example: Concerts -> Punk/Metal/Rock/Pop).
-- Pin tap bottom sheet with quick actions.
 - Vertical flyer posts with full-screen flyer stage first.
 - Event info panel lives below each flyer and appears as user scrolls down.
 - Local relevance badges (`distance`, `Tonight/Tomorrow`, neighborhood).
@@ -77,9 +72,6 @@ Key UI blocks:
 - Inline actions: Interested, Going, Share, Get Tickets.
 
 Primary actions:
-- Drag map
-- Tap pin
-- Tap `Search this area`
 - Double tap flyer -> Interested
 - Tap Going
 - Tap Share
@@ -89,7 +81,7 @@ Data required:
 - ranked event list
 - flyer image URL
 - event datetime
-- distance + neighborhood
+- distance + neighborhood (computed from user location)
 - friend interaction counts
 
 Analytics events:
@@ -138,7 +130,6 @@ Goal:
 
 Key UI blocks:
 - Search bar.
-- Toggle: map/list.
 - Filter chips (`Tonight`, `This Weekend`, `Free`, `All Ages`, `DIY`).
 - Kind and subcategory filters (example: Concerts -> Punk/Metal/Rock/Pop).
 - Nearby sections by neighborhood.

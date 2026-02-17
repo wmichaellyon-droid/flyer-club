@@ -1,4 +1,4 @@
-export type TabKey = 'Feed' | 'Explore' | 'Upload' | 'Profile';
+export type TabKey = 'Feed' | 'Map' | 'Explore' | 'Upload' | 'Profile';
 
 export type IntentState = 'interested' | 'going' | 'saved' | undefined;
 
@@ -50,6 +50,11 @@ export interface UserSetup {
   interests: string[];
   role: UserRole;
   tasteAnswers: EventTasteAnswers;
+}
+
+export interface UserLocation {
+  latitude: number;
+  longitude: number;
 }
 
 export type InteractionMap = Record<string, IntentState>;

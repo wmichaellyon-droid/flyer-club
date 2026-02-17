@@ -7,7 +7,7 @@ interface BottomNavProps {
   onChange: (tab: TabKey) => void;
 }
 
-const tabs: TabKey[] = ['Feed', 'Explore', 'Upload', 'Profile'];
+const tabs: TabKey[] = ['Feed', 'Map', 'Explore', 'Upload', 'Profile'];
 
 export function BottomNav({ activeTab, onChange }: BottomNavProps) {
   return (

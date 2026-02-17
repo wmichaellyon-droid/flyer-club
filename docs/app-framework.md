@@ -17,13 +17,14 @@ Root stack:
 
 Main tabs:
 - `Feed`
+- `Map`
 - `Explore`
 - `Upload`
 - `Profile`
 
 Home presentation:
-- `Feed` tab includes `Map | Flyer Feed` toggle.
-- Default mode is map-first for logged-in users.
+- `Feed` tab is dedicated to an endless flyer stream.
+- `Map` tab is dedicated to geospatial discovery.
 
 ## 3. Feed Scrolling System (Core)
 
@@ -50,10 +51,10 @@ Card actions:
 - `Share` button -> native share sheet.
 - Card tap -> `EventDetail`.
 
-Map mode behavior:
-- Draggable city viewport with local event pins.
+Map tab behavior:
+- Real satellite basemap using `react-native-maps`.
+- User-location centered query with `Search this area` refresh pattern.
 - Pin color system by event type.
-- `Search this area` refresh pattern after drag.
 - Pin tap opens quick-action sheet.
 
 ## 4. Profile System (Core)
@@ -109,7 +110,7 @@ Core entities:
 
 ## 9. Build Order
 
-1. Scaffold navigation + screen shells (6 screens).
+1. Scaffold navigation + screen shells (7 screens including dedicated Map tab).
 2. Build feed list with mock data and action state.
 3. Build profile intent lists powered by shared interaction store.
 4. Add event detail route and CTA actions.
