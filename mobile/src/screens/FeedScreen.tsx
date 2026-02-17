@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   ImageBackground,
@@ -104,6 +104,7 @@ function FeedCard({
   onMessageFlyer,
   onShareEvent,
   onGetTickets,
+  onFeedback,
 }: {
   rankedEvent: RankedEvent;
   intent: IntentState;
@@ -114,6 +115,7 @@ function FeedCard({
   onMessageFlyer: () => void;
   onShareEvent: (destination: 'native' | 'sms') => Promise<void>;
   onGetTickets: () => Promise<void>;
+  onFeedback: (message: string) => void;
 }) {
   const { event, distanceMiles } = rankedEvent;
   const handle = socialHandleFromEvent(event);
@@ -131,6 +133,7 @@ function FeedCard({
       singleTapTimer.current = null;
       lastTap.current = 0;
       onToggleInterested();
+      onFeedback('Interested added');
       return;
     }
 
@@ -178,19 +181,49 @@ function FeedCard({
           {event.category} / {event.subcategory} / {event.ageRating}
         </Text>
         <View style={styles.actionRow}>
-          <Pressable onPress={onToggleInterested} style={styles.actionBtn}>
+          <Pressable
+            onPress={() => {
+              onToggleInterested();
+              onFeedback(intent === 'interested' ? 'Interested removed' : 'Interested added');
+            }}
+            style={[styles.actionBtn, intent === 'interested' && styles.actionBtnActive]}
+          >
             <Text style={styles.actionBtnLabel}>Interested</Text>
           </Pressable>
-          <Pressable onPress={onSetGoing} style={[styles.actionBtn, styles.actionBtnPrimary]}>
+          <Pressable
+            onPress={() => {
+              onSetGoing();
+              onFeedback('You are going');
+            }}
+            style={[styles.actionBtn, styles.actionBtnPrimary, intent === 'going' && styles.actionBtnPrimaryStrong]}
+          >
             <Text style={styles.actionBtnPrimaryLabel}>Going</Text>
           </Pressable>
-          <Pressable onPress={onMessageFlyer} style={styles.actionBtn}>
+          <Pressable
+            onPress={() => {
+              onMessageFlyer();
+              onFeedback('Opened DMs with flyer');
+            }}
+            style={styles.actionBtn}
+          >
             <Text style={styles.actionBtnLabel}>DM</Text>
           </Pressable>
-          <Pressable onPress={() => void onShareEvent('native')} style={styles.actionBtn}>
+          <Pressable
+            onPress={() => {
+              void onShareEvent('native');
+              onFeedback('Share sheet opened');
+            }}
+            style={styles.actionBtn}
+          >
             <Text style={styles.actionBtnLabel}>Share</Text>
           </Pressable>
-          <Pressable onPress={() => void onGetTickets()} style={styles.actionBtn}>
+          <Pressable
+            onPress={() => {
+              void onGetTickets();
+              onFeedback('Opening ticket link');
+            }}
+            style={styles.actionBtn}
+          >
             <Text style={styles.actionBtnLabel}>Tickets</Text>
           </Pressable>
         </View>
@@ -232,9 +265,29 @@ export function FeedScreen({
   onFlyerImpression,
 }: FeedScreenProps) {
   const [chunkCount, setChunkCount] = useState(3);
+  const [feedback, setFeedback] = useState('');
   const { width } = useWindowDimensions();
   const flyerHeight = Math.round(width * 1.25);
   const seenImpressions = useRef(new Set<string>());
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showFeedback = (message: string) => {
+    setFeedback(message);
+    if (feedbackTimer.current) {
+      clearTimeout(feedbackTimer.current);
+    }
+    feedbackTimer.current = setTimeout(() => {
+      setFeedback('');
+    }, 1100);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimer.current) {
+        clearTimeout(feedbackTimer.current);
+      }
+    };
+  }, []);
 
   const rankedEvents = useMemo(() => {
     const withDistance = events.map((event) => {
@@ -271,7 +324,19 @@ export function FeedScreen({
       <ScreenBackdrop />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>For You</Text>
-        <Text style={styles.headerSub}>Live flyers in {user.city}</Text>
+        <Text style={styles.headerSub}>Discover - Commit - Coordinate in {user.city}</Text>
+
+        <View style={styles.modeRow}>
+          <View style={styles.modeChip}>
+            <Text style={styles.modeChipLabel}>Discover</Text>
+          </View>
+          <View style={styles.modeChip}>
+            <Text style={styles.modeChipLabel}>Commit</Text>
+          </View>
+          <View style={styles.modeChip}>
+            <Text style={styles.modeChipLabel}>Coordinate</Text>
+          </View>
+        </View>
 
         <View style={styles.radiusRow}>
           {radiusOptions.map((option) => {
@@ -327,9 +392,15 @@ export function FeedScreen({
             onMessageFlyer={() => onMessageFlyer(item.rankedEvent.event.id)}
             onShareEvent={(destination) => onShareEvent(item.rankedEvent.event, destination)}
             onGetTickets={() => onGetTickets(item.rankedEvent.event)}
+            onFeedback={showFeedback}
           />
         )}
       />
+      {feedback.length > 0 && (
+        <View style={styles.feedbackToast}>
+          <Text style={styles.feedbackText}>{feedback}</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -357,6 +428,25 @@ const styles = StyleSheet.create({
   radiusRow: {
     flexDirection: 'row',
     gap: 5,
+  },
+  modeRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  modeChip: {
+    borderWidth: 1,
+    borderColor: '#ffffff27',
+    backgroundColor: '#ffffff0b',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  modeChipLabel: {
+    color: theme.text,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   radiusChip: {
     borderWidth: 1,
@@ -503,9 +593,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ffffff24',
   },
+  actionBtnActive: {
+    borderColor: '#ffffff66',
+    backgroundColor: '#ffffff1a',
+  },
   actionBtnPrimary: {
     backgroundColor: theme.primary,
     borderColor: theme.primary,
+  },
+  actionBtnPrimaryStrong: {
+    borderColor: '#ffffffcc',
   },
   actionBtnLabel: {
     color: theme.text,
@@ -530,6 +627,22 @@ const styles = StyleSheet.create({
   openBtnLabel: {
     color: theme.primary,
     fontSize: 11,
+    fontWeight: '700',
+  },
+  feedbackToast: {
+    position: 'absolute',
+    bottom: 84,
+    alignSelf: 'center',
+    backgroundColor: '#0f1e2aee',
+    borderWidth: 1,
+    borderColor: '#ffffff33',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  feedbackText: {
+    color: theme.text,
+    fontSize: 12,
     fontWeight: '700',
   },
 });

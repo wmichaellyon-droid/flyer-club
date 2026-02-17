@@ -103,6 +103,11 @@ export function EventDetailScreen({
           <Text style={styles.detailMuted}>
             {event.dateLabel} - {event.timeLabel}
           </Text>
+          <View style={styles.modeRow}>
+            <Text style={styles.modeChip}>Discover</Text>
+            <Text style={styles.modeChip}>Commit</Text>
+            <Text style={styles.modeChip}>Coordinate</Text>
+          </View>
         </View>
 
         <View style={styles.card}>
@@ -309,6 +314,25 @@ const styles = StyleSheet.create({
     color: theme.text,
     fontSize: 24,
     fontWeight: '800',
+  },
+  modeRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 4,
+  },
+  modeChip: {
+    borderWidth: 1,
+    borderColor: '#ffffff2f',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    color: theme.text,
+    fontSize: 10,
+    fontWeight: '700',
+    backgroundColor: '#ffffff0d',
+    overflow: 'hidden',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   rowActions: {
     flexDirection: 'row',

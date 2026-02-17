@@ -94,20 +94,31 @@ export function MessagesScreen({
     setDraft('');
   };
 
+  const sendQuick = (text: string) => {
+    if (!activeFriend) {
+      return;
+    }
+    onSendMessage({
+      friendId: activeFriend.id,
+      text,
+      flyerEventId: attachFlyer ? pendingFlyer?.id : undefined,
+    });
+  };
+
   if (!thread || !activeFriend) {
     return (
       <SafeAreaView style={styles.safe}>
         <ScreenBackdrop />
         <View style={styles.container}>
-          <Text style={styles.title}>Messages</Text>
-          <Text style={styles.subtitle}>Send flyers to friends with a quick note.</Text>
+          <Text style={styles.title}>Coordinate</Text>
+          <Text style={styles.subtitle}>Send flyers + quick plans to friends.</Text>
 
           {pendingFlyer && (
             <View style={styles.pendingCard}>
               <Text style={styles.pendingTitle}>Ready to send</Text>
               <Text style={styles.pendingName}>{pendingFlyer.title}</Text>
               <Text style={styles.pendingMeta}>
-                {pendingFlyer.dateLabel} • {pendingFlyer.venue}
+                {pendingFlyer.dateLabel} - {pendingFlyer.venue}
               </Text>
               <Pressable onPress={onClearPendingFlyer}>
                 <Text style={styles.pendingClear}>Clear flyer</Text>
@@ -124,6 +135,9 @@ export function MessagesScreen({
                 onPress={() => {
                   const existing = inbox.threads.find((item) => item.friendId === friend.id);
                   onSelectThread(existing?.id ?? `thread_${friend.id}`);
+                  if (pendingFlyer) {
+                    setDraft(DM_QUICK_TEXTS[0]);
+                  }
                 }}
               >
                 <Text style={styles.friendAvatar}>{friend.avatar}</Text>
@@ -173,7 +187,7 @@ export function MessagesScreen({
           </Pressable>
           <View>
             <Text style={styles.threadHeaderName}>{activeFriend.name}</Text>
-            <Text style={styles.threadHeaderHandle}>{activeFriend.handle}</Text>
+            <Text style={styles.threadHeaderHandle}>{activeFriend.handle} - coordinate</Text>
           </View>
         </View>
 
@@ -200,7 +214,7 @@ export function MessagesScreen({
                             {attachedEvent.title}
                           </Text>
                           <Text style={styles.flyerMeta} numberOfLines={1}>
-                            {attachedEvent.dateLabel} • {attachedEvent.venue}
+                            {attachedEvent.dateLabel} - {attachedEvent.venue}
                           </Text>
                         </View>
                       </ImageBackground>
@@ -231,7 +245,7 @@ export function MessagesScreen({
 
         <View style={styles.quickRow}>
           {DM_QUICK_TEXTS.map((option) => (
-            <Pressable key={option} style={styles.quickChip} onPress={() => setDraft(option)}>
+            <Pressable key={option} style={styles.quickChip} onPress={() => sendQuick(option)}>
               <Text style={styles.quickLabel}>{option}</Text>
             </Pressable>
           ))}
@@ -553,3 +567,4 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
 });
+
