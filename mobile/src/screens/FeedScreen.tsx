@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import {
   FlatList,
+  ImageBackground,
   Linking,
   Pressable,
   SafeAreaView,
@@ -114,25 +115,31 @@ function FeedCard({
         onPress={onCardTap}
         style={[styles.flyerStage, { backgroundColor: event.heroColor, height: flyerHeight }]}
       >
-        <View style={styles.flyerGrainA} />
-        <View style={styles.flyerGrainB} />
-        <View style={styles.flyerOverlay}>
-          <View style={styles.badgeRow}>
-            <Text style={styles.badge}>{event.category}</Text>
-            <Text style={styles.badgeMuted}>{event.ageRating}</Text>
-          </View>
-
-          <View style={styles.flyerContent}>
-            <Text style={styles.flyerTitle}>{event.title}</Text>
-            <Text style={styles.flyerMeta}>{event.promoter}</Text>
-            <View style={styles.localRow}>
-              <Text style={styles.localBadge}>{event.tags[0] ?? 'Soon'}</Text>
-              <Text style={styles.localBadge}>{event.distanceMiles.toFixed(1)} mi</Text>
-              <Text style={styles.localBadge}>{event.neighborhood}</Text>
+        <ImageBackground
+          source={{ uri: event.flyerImageUrl }}
+          resizeMode="cover"
+          style={styles.flyerImage}
+          imageStyle={styles.flyerImageAsset}
+        >
+          <View style={styles.flyerTint} />
+          <View style={styles.flyerOverlay}>
+            <View style={styles.badgeRow}>
+              <Text style={styles.badge}>{event.category}</Text>
+              <Text style={styles.badgeMuted}>{event.ageRating}</Text>
             </View>
-            <Text style={styles.flyerHint}>Double tap flyer for Interested</Text>
+
+            <View style={styles.flyerContent}>
+              <Text style={styles.flyerTitle}>{event.title}</Text>
+              <Text style={styles.flyerMeta}>{event.promoter}</Text>
+              <View style={styles.localRow}>
+                <Text style={styles.localBadge}>{event.tags[0] ?? 'Soon'}</Text>
+                <Text style={styles.localBadge}>{event.distanceMiles.toFixed(1)} mi</Text>
+                <Text style={styles.localBadge}>{event.neighborhood}</Text>
+              </View>
+              <Text style={styles.flyerHint}>Double tap flyer for Interested</Text>
+            </View>
           </View>
-        </View>
+        </ImageBackground>
       </Pressable>
 
       <View style={styles.infoPanel}>
@@ -273,29 +280,23 @@ const styles = StyleSheet.create({
     width: '100%',
     flex: 1,
     justifyContent: 'space-between',
-    padding: 14,
+  },
+  flyerImage: {
+    flex: 1,
+    width: '100%',
+  },
+  flyerImageAsset: {
+    width: '100%',
+    height: '100%',
+  },
+  flyerTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#00000066',
   },
   flyerOverlay: {
     flex: 1,
     justifyContent: 'space-between',
-  },
-  flyerGrainA: {
-    position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 999,
-    top: -60,
-    right: -30,
-    backgroundColor: '#ffffff10',
-  },
-  flyerGrainB: {
-    position: 'absolute',
-    width: 240,
-    height: 240,
-    borderRadius: 999,
-    bottom: 90,
-    left: -80,
-    backgroundColor: '#00000030',
+    padding: 14,
   },
   flyerContent: {
     gap: 10,
@@ -307,6 +308,9 @@ const styles = StyleSheet.create({
     fontSize: 42,
     lineHeight: 46,
     maxWidth: '94%',
+    textShadowColor: '#000000b8',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   flyerMeta: {
     color: '#fff6ffcc',

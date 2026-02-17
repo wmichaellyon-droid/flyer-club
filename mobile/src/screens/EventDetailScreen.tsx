@@ -1,4 +1,14 @@
-import { Linking, Pressable, SafeAreaView, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import {
+  ImageBackground,
+  Linking,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { theme } from '../theme';
 import { EventItem, IntentState } from '../types';
 
@@ -31,7 +41,13 @@ export function EventDetailScreen({
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={[styles.hero, { backgroundColor: event.heroColor }]}>
+        <ImageBackground
+          source={{ uri: event.flyerImageUrl }}
+          resizeMode="cover"
+          style={[styles.hero, { backgroundColor: event.heroColor }]}
+          imageStyle={styles.heroImage}
+        >
+          <View style={styles.heroTint} />
           <Pressable onPress={onBack} style={styles.backBtn}>
             <Text style={styles.backBtnLabel}>Back</Text>
           </Pressable>
@@ -40,7 +56,7 @@ export function EventDetailScreen({
             <Text style={styles.heroTitle}>{event.title}</Text>
             <Text style={styles.heroPromoter}>{event.promoter}</Text>
           </View>
-        </View>
+        </ImageBackground>
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Event Info</Text>
@@ -102,8 +118,17 @@ const styles = StyleSheet.create({
   },
   hero: {
     padding: 16,
-    minHeight: 220,
+    minHeight: 300,
     justifyContent: 'space-between',
+    overflow: 'hidden',
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#00000066',
   },
   backBtn: {
     alignSelf: 'flex-start',

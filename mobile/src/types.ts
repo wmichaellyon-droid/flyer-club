@@ -22,6 +22,7 @@ export interface EventItem {
   tags: string[];
   description: string;
   ticketUrl: string;
+  flyerImageUrl: string;
   heroColor: string;
   friendInterested: number;
   friendGoing: number;

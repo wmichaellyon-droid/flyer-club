@@ -53,6 +53,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'A late printmaking session with mini zine tables, open collage wall, and low-key ambient sets between workshops.',
     ticketUrl: 'https://example.com/tickets/warehouse-zine-night',
+    flyerImageUrl: 'https://loremflickr.com/1080/1920/punk,concert,poster?lock=901',
     heroColor: '#3a1b53',
     friendInterested: 9,
     friendGoing: 4,
@@ -75,6 +76,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'A projected silent thriller scored by local synth duo, with blankets, thermos coffee, and a bring-your-own-chair setup.',
     ticketUrl: 'https://example.com/tickets/silent-film-live-score',
+    flyerImageUrl: 'https://loremflickr.com/1080/1920/indie,film,poster?lock=902',
     heroColor: '#23324d',
     friendInterested: 6,
     friendGoing: 2,
@@ -97,6 +99,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'Curated vintage racks, hand-sewn patch bar, and barter lane for clothes, records, and old cameras.',
     ticketUrl: 'https://example.com/tickets/mutant-flea',
+    flyerImageUrl: 'https://loremflickr.com/1080/1920/diy,market,poster?lock=903',
     heroColor: '#5f2e2c',
     friendInterested: 12,
     friendGoing: 5,
@@ -119,6 +122,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'Five original 15-minute pieces in one night, rotating sets every 30 minutes with cast Q&A between rounds.',
     ticketUrl: 'https://example.com/tickets/micro-theater-marathon',
+    flyerImageUrl: 'https://loremflickr.com/1080/1920/theater,poster,flyer?lock=904',
     heroColor: '#2d4b3d',
     friendInterested: 4,
     friendGoing: 2,
@@ -141,6 +145,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'Underground dance floor with open deck slots, no VIP sections, and a community-coded dress-up theme each week.',
     ticketUrl: 'https://example.com/tickets/open-deck-night',
+    flyerImageUrl: 'https://loremflickr.com/1080/1920/punk,nightlife,flyer?lock=905',
     heroColor: '#4b245c',
     friendInterested: 8,
     friendGoing: 2,
@@ -163,6 +168,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'Street-style spoken word under string lights with 3-minute rounds, live vote cards, and free chai.',
     ticketUrl: 'https://example.com/tickets/parking-lot-poetry-slam',
+    flyerImageUrl: 'https://loremflickr.com/1080/1920/poetry,poster,flyer?lock=906',
     heroColor: '#214442',
     friendInterested: 7,
     friendGoing: 3,
@@ -185,6 +191,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'Bring hardware synths, samplers, or drum machines for a no-laptop jam session and skill-share mini demos.',
     ticketUrl: 'https://example.com/tickets/no-laptop-jam-circle',
+    flyerImageUrl: 'https://loremflickr.com/1080/1920/workshop,poster,flyer?lock=907',
     heroColor: '#3c3f66',
     friendInterested: 5,
     friendGoing: 1,
@@ -207,6 +214,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     description:
       'Community cookout, local resource tables, and short teach-ins on tenant rights, first aid, and neighborhood organizing.',
     ticketUrl: 'https://example.com/tickets/mutual-aid-food-fair',
+    flyerImageUrl: 'https://loremflickr.com/1080/1920/community,event,poster?lock=908',
     heroColor: '#6b5130',
     friendInterested: 10,
     friendGoing: 4,
