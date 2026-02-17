@@ -63,6 +63,7 @@ Map defaults:
 - draggable city map with tappable event pins
 - `Search this area` action after map drag
 - color-coded pins by event type
+- type filters with subcategory drill-down (for example, concerts -> punk/metal/rock/pop)
 
 ## 5. Profile Model (MVP)
 

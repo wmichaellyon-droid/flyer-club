@@ -8,9 +8,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { EXPLORE_FILTERS } from '../mockData';
+import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND, EXPLORE_FILTERS } from '../mockData';
 import { theme } from '../theme';
-import { EventItem } from '../types';
+import { EventItem, EventKind } from '../types';
 
 interface ExploreScreenProps {
   events: EventItem[];
@@ -20,6 +20,13 @@ interface ExploreScreenProps {
 export function ExploreScreen({ events, onOpenEvent }: ExploreScreenProps) {
   const [query, setQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>('Tonight');
+  const [selectedKind, setSelectedKind] = useState<'all' | EventKind>('all');
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all');
+
+  const availableSubcategories = useMemo(
+    () => (selectedKind === 'all' ? [] : EVENT_SUBCATEGORIES_BY_KIND[selectedKind]),
+    [selectedKind],
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -30,9 +37,12 @@ export function ExploreScreen({ events, onOpenEvent }: ExploreScreenProps) {
         event.venue.toLowerCase().includes(q) ||
         event.neighborhood.toLowerCase().includes(q);
       const matchesFilter = selectedFilter ? event.tags.includes(selectedFilter) : true;
-      return matchesText && matchesFilter;
+      const matchesKind = selectedKind === 'all' ? true : event.kind === selectedKind;
+      const matchesSubcategory =
+        selectedSubcategory === 'all' ? true : event.subcategory === selectedSubcategory;
+      return matchesText && matchesFilter && matchesKind && matchesSubcategory;
     });
-  }, [events, query, selectedFilter]);
+  }, [events, query, selectedFilter, selectedKind, selectedSubcategory]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -61,6 +71,55 @@ export function ExploreScreen({ events, onOpenEvent }: ExploreScreenProps) {
           })}
         </View>
 
+        <Text style={styles.groupLabel}>Kind</Text>
+        <View style={styles.filterRow}>
+          {EVENT_KIND_FILTERS.map((kind) => {
+            const active = kind.id === selectedKind;
+            return (
+              <Pressable
+                key={kind.id}
+                onPress={() => {
+                  setSelectedKind(kind.id);
+                  setSelectedSubcategory('all');
+                }}
+                style={[styles.filterChip, active && styles.filterChipActive]}
+              >
+                <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>{kind.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {selectedKind !== 'all' && (
+          <>
+            <Text style={styles.groupLabel}>Subcategory</Text>
+            <View style={styles.filterRow}>
+              <Pressable
+                onPress={() => setSelectedSubcategory('all')}
+                style={[styles.filterChip, selectedSubcategory === 'all' && styles.filterChipActive]}
+              >
+                <Text style={[styles.filterLabel, selectedSubcategory === 'all' && styles.filterLabelActive]}>
+                  All
+                </Text>
+              </Pressable>
+              {availableSubcategories.map((subcategory) => {
+                const active = subcategory === selectedSubcategory;
+                return (
+                  <Pressable
+                    key={subcategory}
+                    onPress={() => setSelectedSubcategory(subcategory)}
+                    style={[styles.filterChip, active && styles.filterChipActive]}
+                  >
+                    <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>
+                      {subcategory}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        )}
+
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
@@ -79,6 +138,7 @@ export function ExploreScreen({ events, onOpenEvent }: ExploreScreenProps) {
                 <Text style={styles.eventMeta}>
                   {item.dateLabel} - {item.neighborhood} - {item.distanceMiles.toFixed(1)} mi
                 </Text>
+                <Text style={styles.eventMeta}>{item.category} - {item.subcategory}</Text>
               </View>
               <Text style={styles.rowLink}>Open</Text>
             </Pressable>
@@ -138,6 +198,14 @@ const styles = StyleSheet.create({
   },
   filterLabelActive: {
     color: theme.text,
+  },
+  groupLabel: {
+    color: theme.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginTop: 2,
   },
   listContent: {
     paddingBottom: 22,

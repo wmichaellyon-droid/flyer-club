@@ -65,6 +65,7 @@ Key UI blocks:
 - Home toggle: `Map` and `Flyer Feed`.
 - Map mode with draggable city viewport.
 - Color-coded event pins by type (concert, film, meetup/community, comedy, arts/theater).
+- Kind filters with subcategory drill-down (example: Concerts -> Punk/Metal/Rock/Pop).
 - Pin tap bottom sheet with quick actions.
 - Vertical flyer posts with full-screen flyer stage first.
 - Event info panel lives below each flyer and appears as user scrolls down.
@@ -135,7 +136,8 @@ Goal:
 Key UI blocks:
 - Search bar.
 - Toggle: map/list.
-- Filter chips (`Tonight`, `This Weekend`, `Free`, `Live Music`, `21+`).
+- Filter chips (`Tonight`, `This Weekend`, `Free`, `All Ages`, `DIY`).
+- Kind and subcategory filters (example: Concerts -> Punk/Metal/Rock/Pop).
 - Nearby sections by neighborhood.
 
 Primary actions:

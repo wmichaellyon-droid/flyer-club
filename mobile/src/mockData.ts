@@ -1,4 +1,4 @@
-import { EventItem, EventTasteQuestion, UserRole, UserSetup } from './types';
+import { EventItem, EventKind, EventTasteQuestion, UserRole, UserSetup } from './types';
 
 export const DEFAULT_USER: UserSetup = {
   email: '',
@@ -38,6 +38,23 @@ export const AVAILABLE_INTERESTS = [
 ];
 
 export const EXPLORE_FILTERS = ['Tonight', 'This Weekend', 'Free', 'All Ages', 'DIY'];
+
+export const EVENT_KIND_FILTERS: { id: 'all' | EventKind; label: string }[] = [
+  { id: 'all', label: 'All Kinds' },
+  { id: 'concert', label: 'Concerts' },
+  { id: 'film', label: 'Film' },
+  { id: 'meetup', label: 'Meetups' },
+  { id: 'comedy', label: 'Comedy' },
+  { id: 'arts', label: 'Arts/Theater' },
+];
+
+export const EVENT_SUBCATEGORIES_BY_KIND: Record<EventKind, string[]> = {
+  concert: ['Punk', 'Metal', 'Rock', 'Pop', 'House', 'Electronic', 'Jazz'],
+  film: ['Arthouse', 'Horror', 'Documentary', 'Experimental'],
+  meetup: ['Community', 'Poetry', 'Mutual Aid', 'Workshops', 'Markets'],
+  comedy: ['Stand-up', 'Improv', 'Alt Comedy'],
+  arts: ['Zine/Print', 'Theater', 'Gallery', 'Performance Art'],
+};
 
 export const LOGIN_QUESTIONS: EventTasteQuestion[] = [
   {
@@ -90,6 +107,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     latitude: 30.2576,
     longitude: -97.7177,
     kind: 'arts',
+    subcategory: 'Zine/Print',
     friendInterested: 9,
     friendGoing: 4,
     postedByRole: 'event_enjoyer',
@@ -116,6 +134,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     latitude: 30.2624,
     longitude: -97.7024,
     kind: 'film',
+    subcategory: 'Arthouse',
     friendInterested: 6,
     friendGoing: 2,
     postedByRole: 'promoter',
@@ -142,6 +161,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     latitude: 30.2632,
     longitude: -97.7285,
     kind: 'meetup',
+    subcategory: 'Markets',
     friendInterested: 12,
     friendGoing: 5,
     postedByRole: 'promoter',
@@ -168,6 +188,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     latitude: 30.2741,
     longitude: -97.7188,
     kind: 'arts',
+    subcategory: 'Theater',
     friendInterested: 4,
     friendGoing: 2,
     postedByRole: 'event_enjoyer',
@@ -194,6 +215,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     latitude: 30.2665,
     longitude: -97.7394,
     kind: 'concert',
+    subcategory: 'House',
     friendInterested: 8,
     friendGoing: 2,
     postedByRole: 'promoter',
@@ -220,6 +242,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     latitude: 30.257,
     longitude: -97.7212,
     kind: 'meetup',
+    subcategory: 'Poetry',
     friendInterested: 7,
     friendGoing: 3,
     postedByRole: 'concert_lover',
@@ -246,6 +269,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     latitude: 30.2501,
     longitude: -97.7089,
     kind: 'concert',
+    subcategory: 'Electronic',
     friendInterested: 5,
     friendGoing: 1,
     postedByRole: 'event_enjoyer',
@@ -272,6 +296,7 @@ export const AUSTIN_EVENTS: EventItem[] = [
     latitude: 30.2637,
     longitude: -97.7001,
     kind: 'meetup',
+    subcategory: 'Mutual Aid',
     friendInterested: 10,
     friendGoing: 4,
     postedByRole: 'promoter',

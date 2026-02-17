@@ -80,7 +80,7 @@ Rules:
 
 Core entities:
 - `User`: id, handle, city, location, preferences, role (`concert_lover|event_enjoyer|promoter`).
-- `Event`: id, title, start_at, venue_id, city, neighborhood, ticket_url.
+- `Event`: id, title, start_at, venue_id, city, neighborhood, kind, subcategory, ticket_url.
 - `FlyerPost`: id, event_id, media_url, moderation_status.
 - `Interaction`: user_id, event_id, state (`interested|going|saved`), updated_at.
 - `Share`: sender_user_id, event_id, destination, created_at.

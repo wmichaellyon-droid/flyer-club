@@ -12,7 +12,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { EXPLORE_FILTERS } from '../mockData';
+import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND, EXPLORE_FILTERS } from '../mockData';
 import { theme } from '../theme';
 import { EventItem, EventKind, InteractionMap, IntentState, UserSetup } from '../types';
 
@@ -38,11 +38,11 @@ interface MapCenter {
 const AUSTIN_CENTER: MapCenter = { lat: 30.2672, lng: -97.7431 };
 
 const KIND_CONFIG: Record<EventKind, { color: string; label: string; glyph: string }> = {
-  concert: { color: '#35A7FF', label: 'Concert', glyph: '?' },
-  film: { color: '#F6AE2D', label: 'Film', glyph: '?' },
-  meetup: { color: '#3AC47D', label: 'Meetup', glyph: '?' },
-  comedy: { color: '#FF6B6B', label: 'Comedy', glyph: '?' },
-  arts: { color: '#D66BFF', label: 'Arts', glyph: '?' },
+  concert: { color: '#35A7FF', label: 'Concert', glyph: 'M' },
+  film: { color: '#F6AE2D', label: 'Film', glyph: 'F' },
+  meetup: { color: '#3AC47D', label: 'Meetup', glyph: 'G' },
+  comedy: { color: '#FF6B6B', label: 'Comedy', glyph: 'C' },
+  arts: { color: '#D66BFF', label: 'Arts', glyph: 'A' },
 };
 
 function eventRankScore(event: EventItem) {
@@ -193,6 +193,7 @@ function FeedCard({
       <View style={styles.infoPanel}>
         <Text style={styles.infoTitle}>{event.title}</Text>
         <Text style={styles.infoRole}>{event.postedByRole === 'promoter' ? 'Promoter post' : 'Community post'}</Text>
+        <Text style={styles.infoSubcategory}>{event.subcategory}</Text>
         <Text style={styles.infoTime}>
           {event.dateLabel} - {event.timeLabel}
         </Text>
@@ -245,6 +246,8 @@ function MapHome({
   const { height } = useWindowDimensions();
   const mapHeight = Math.max(height * 0.56, 390);
   const [activeChip, setActiveChip] = useState('Tonight');
+  const [selectedKind, setSelectedKind] = useState<'all' | EventKind>('all');
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all');
   const [queryCenter, setQueryCenter] = useState<MapCenter>(AUSTIN_CENTER);
   const [viewCenter, setViewCenter] = useState<MapCenter>(AUSTIN_CENTER);
   const [needsSearch, setNeedsSearch] = useState(false);
@@ -280,16 +283,23 @@ function MapHome({
     [],
   );
 
+  const availableSubcategories = useMemo(
+    () => (selectedKind === 'all' ? [] : EVENT_SUBCATEGORIES_BY_KIND[selectedKind]),
+    [selectedKind],
+  );
+
   const filteredEvents = useMemo(() => {
     return events
       .filter((event) => filterByChip(event, activeChip))
+      .filter((event) => (selectedKind === 'all' ? true : event.kind === selectedKind))
+      .filter((event) => (selectedSubcategory === 'all' ? true : event.subcategory === selectedSubcategory))
       .filter((event) => milesBetween(queryCenter, { lat: event.latitude, lng: event.longitude }) <= 10)
       .sort(
         (a, b) =>
           milesBetween(queryCenter, { lat: a.latitude, lng: a.longitude }) -
           milesBetween(queryCenter, { lat: b.latitude, lng: b.longitude }),
       );
-  }, [events, activeChip, queryCenter]);
+  }, [events, activeChip, queryCenter, selectedKind, selectedSubcategory]);
 
   const selectedEvent = useMemo(
     () => filteredEvents.find((event) => event.id === selectedEventId) ?? null,
@@ -329,6 +339,58 @@ function MapHome({
           );
         })}
       </View>
+
+      <Text style={styles.filterLabelTitle}>Kind</Text>
+      <View style={styles.chipRow}>
+        {EVENT_KIND_FILTERS.map((kind) => {
+          const active = kind.id === selectedKind;
+          return (
+            <Pressable
+              key={kind.id}
+              style={[styles.chip, active && styles.chipActive]}
+              onPress={() => {
+                setSelectedKind(kind.id);
+                setSelectedSubcategory('all');
+                setSelectedEventId(null);
+              }}
+            >
+              <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{kind.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {selectedKind !== 'all' && (
+        <>
+          <Text style={styles.filterLabelTitle}>Subcategory</Text>
+          <View style={styles.chipRow}>
+            <Pressable
+              style={[styles.chip, selectedSubcategory === 'all' && styles.chipActive]}
+              onPress={() => {
+                setSelectedSubcategory('all');
+                setSelectedEventId(null);
+              }}
+            >
+              <Text style={[styles.chipLabel, selectedSubcategory === 'all' && styles.chipLabelActive]}>All</Text>
+            </Pressable>
+            {availableSubcategories.map((subcategory) => {
+              const active = subcategory === selectedSubcategory;
+              return (
+                <Pressable
+                  key={subcategory}
+                  style={[styles.chip, active && styles.chipActive]}
+                  onPress={() => {
+                    setSelectedSubcategory(subcategory);
+                    setSelectedEventId(null);
+                  }}
+                >
+                  <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{subcategory}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      )}
 
       <View
         style={[styles.mapBoard, { height: mapHeight }]}
@@ -421,6 +483,9 @@ function MapHome({
           <Text style={styles.mapEventTitle}>{selectedEvent.title}</Text>
           <Text style={styles.mapEventMeta}>
             {selectedEvent.dateLabel} - {selectedEvent.neighborhood} - {selectedEvent.distanceMiles.toFixed(1)} mi
+          </Text>
+          <Text style={styles.mapEventMeta}>
+            {KIND_CONFIG[selectedEvent.kind].label} - {selectedEvent.subcategory}
           </Text>
           <Text style={styles.mapEventMeta}>{selectedEvent.venue}</Text>
           <Text style={styles.mapEventIntent}>Current: {intentLabel(interactions[selectedEvent.id])}</Text>
@@ -620,6 +685,14 @@ const styles = StyleSheet.create({
   },
   chipLabelActive: {
     color: theme.text,
+  },
+  filterLabelTitle: {
+    color: theme.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginTop: 2,
   },
   mapBoard: {
     borderRadius: 18,
@@ -953,6 +1026,11 @@ const styles = StyleSheet.create({
     color: theme.primary,
     fontSize: 12,
     fontWeight: '700',
+  },
+  infoSubcategory: {
+    color: theme.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
   },
   infoVenue: {
     color: theme.textMuted,

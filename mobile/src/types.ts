@@ -6,6 +6,7 @@ export type IntentFilter = 'Interested' | 'Going' | 'Saved';
 
 export type UserRole = 'concert_lover' | 'event_enjoyer' | 'promoter';
 export type EventKind = 'concert' | 'film' | 'meetup' | 'comedy' | 'arts';
+export type EventSubcategory = string;
 export type EventTasteAnswers = Record<string, string>;
 
 export interface EventTasteQuestion {
@@ -35,6 +36,7 @@ export interface EventItem {
   latitude: number;
   longitude: number;
   kind: EventKind;
+  subcategory: EventSubcategory;
   friendInterested: number;
   friendGoing: number;
   postedByRole: UserRole;
