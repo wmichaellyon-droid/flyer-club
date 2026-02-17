@@ -210,8 +210,8 @@ export function FeedScreen({
   onFlyerImpression,
 }: FeedScreenProps) {
   const [chunkCount, setChunkCount] = useState(3);
-  const { height } = useWindowDimensions();
-  const flyerHeight = Math.max(height - 250, 460);
+  const { width } = useWindowDimensions();
+  const flyerHeight = Math.round(width * 1.25);
   const seenImpressions = useRef(new Set<string>());
 
   const rankedEvents = useMemo(() => {
@@ -356,8 +356,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 20,
-    paddingHorizontal: 10,
-    gap: 20,
+    gap: 14,
   },
   footerText: {
     color: theme.textMuted,
@@ -366,15 +365,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   postWrap: {
-    borderRadius: 22,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#ffffff24',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#ffffff1a',
     backgroundColor: theme.surface,
   },
   flyerStage: {
     width: '100%',
-    flex: 1,
     justifyContent: 'space-between',
   },
   flyerImage: {
@@ -463,7 +461,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   infoPanel: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 7,
     backgroundColor: theme.surface,
