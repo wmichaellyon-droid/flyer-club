@@ -54,7 +54,6 @@ export function EventDetailScreen({
   const [reportDetails, setReportDetails] = useState('');
   const [reportState, setReportState] = useState<'idle' | 'sent' | 'error'>('idle');
   const [actionBusy, setActionBusy] = useState(false);
-  const [heroSize, setHeroSize] = useState({ width: 1, height: 1 });
 
   const submitReport = async () => {
     setActionBusy(true);
@@ -82,45 +81,29 @@ export function EventDetailScreen({
     <SafeAreaView style={styles.safe}>
       <ScreenBackdrop />
       <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.topBar}>
+          <Pressable onPress={onBack} style={styles.backBtn}>
+            <Text style={styles.backBtnLabel}>Back</Text>
+          </Pressable>
+          <Text style={styles.topBarMeta}>
+            {event.category} / {event.subcategory}
+          </Text>
+        </View>
+
         <ImageBackground
           source={{ uri: event.flyerImageUrl }}
           resizeMode="cover"
           style={[styles.hero, { backgroundColor: event.heroColor }]}
           imageStyle={styles.heroImage}
-          onLayout={(layoutEvent) =>
-            setHeroSize({
-              width: layoutEvent.nativeEvent.layout.width,
-              height: layoutEvent.nativeEvent.layout.height,
-            })
-          }
-        >
-          <View style={styles.heroTint} />
-          <Pressable onPress={onBack} style={styles.backBtn}>
-            <Text style={styles.backBtnLabel}>Back</Text>
-          </Pressable>
-          <View style={styles.heroContent}>
-            <Text style={styles.heroCategory}>{event.category}</Text>
-            <Text style={styles.heroTitle}>{event.title}</Text>
-            <Text style={styles.heroPromoter}>{event.promoter}</Text>
-          </View>
-          {event.flyerTags
-            .filter((tag) => tag.isPublic)
-            .map((tag) => (
-              <Pressable
-                key={tag.id}
-                onPress={() => onOpenEntity(tag.entityId)}
-                style={[
-                  styles.heroTagPin,
-                  {
-                    left: Math.max(8, Math.min(heroSize.width - 24, tag.x * heroSize.width - 10)),
-                    top: Math.max(50, Math.min(heroSize.height - 20, tag.y * heroSize.height - 10)),
-                  },
-                ]}
-              >
-                <Text style={styles.heroTagPinLabel}>@</Text>
-              </Pressable>
-            ))}
-        </ImageBackground>
+        />
+
+        <View style={styles.card}>
+          <Text style={styles.eventTitle}>{event.title}</Text>
+          <Text style={styles.detailMuted}>{event.promoter}</Text>
+          <Text style={styles.detailMuted}>
+            {event.dateLabel} - {event.timeLabel}
+          </Text>
+        </View>
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Event Info</Text>
@@ -259,24 +242,35 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
     gap: 12,
   },
-  hero: {
-    padding: 16,
-    minHeight: 300,
+  topBar: {
+    marginTop: 8,
+    marginHorizontal: 12,
+    flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  topBarMeta: {
+    color: theme.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  hero: {
+    marginHorizontal: 12,
+    minHeight: 520,
     overflow: 'hidden',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#ffffff22',
   },
   heroImage: {
     width: '100%',
     height: '100%',
   },
-  heroTint: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#00000066',
-  },
   backBtn: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#00000042',
-    borderColor: '#ffffff44',
+    backgroundColor: '#ffffff10',
+    borderColor: '#ffffff35',
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 12,
@@ -286,41 +280,6 @@ const styles = StyleSheet.create({
     color: theme.text,
     fontWeight: '700',
     fontSize: 12,
-  },
-  heroContent: {
-    gap: 6,
-  },
-  heroCategory: {
-    color: theme.text,
-    textTransform: 'uppercase',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-  },
-  heroTitle: {
-    color: theme.text,
-    fontSize: 32,
-    fontWeight: '800',
-  },
-  heroPromoter: {
-    color: '#f3e9ffcc',
-    fontWeight: '600',
-  },
-  heroTagPin: {
-    position: 'absolute',
-    width: 20,
-    height: 20,
-    borderRadius: 999,
-    backgroundColor: '#ca4effd0',
-    borderWidth: 1,
-    borderColor: '#ffffffc2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroTagPinLabel: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
   },
   card: {
     marginHorizontal: 12,
@@ -345,6 +304,11 @@ const styles = StyleSheet.create({
   detailMuted: {
     color: theme.textMuted,
     fontSize: 13,
+  },
+  eventTitle: {
+    color: theme.text,
+    fontSize: 24,
+    fontWeight: '800',
   },
   rowActions: {
     flexDirection: 'row',

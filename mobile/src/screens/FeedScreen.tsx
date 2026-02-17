@@ -149,7 +149,7 @@ function FeedCard({
         <View style={styles.headerMeta}>
           <Text style={styles.headerHandle}>@{handle}</Text>
           <Text style={styles.postHeaderSub}>
-            {event.neighborhood} • {distanceMiles.toFixed(1)} mi away
+            {event.neighborhood} - {distanceMiles.toFixed(1)} mi away
           </Text>
         </View>
         <Pressable onPress={onOpenEvent} style={styles.openMoreBtn}>
@@ -166,27 +166,17 @@ function FeedCard({
           resizeMode="cover"
           style={styles.flyerImage}
           imageStyle={styles.flyerImageAsset}
-        >
-          <View style={styles.flyerTintTop} />
-          <View style={styles.flyerTintBottom} />
-          <View style={styles.flyerOverlay}>
-            <Text style={styles.flyerHint}>Double tap to mark Interested</Text>
-            <View style={styles.flyerContent}>
-              <View style={styles.badgeRow}>
-                <Text style={styles.badge}>{event.category}</Text>
-                <Text style={styles.badgeMuted}>{event.subcategory}</Text>
-                <Text style={styles.badgeMuted}>{event.ageRating}</Text>
-              </View>
-              <Text style={styles.flyerTitle}>{event.title}</Text>
-              <Text style={styles.flyerMeta}>
-                {event.dateLabel} • {event.timeLabel}
-              </Text>
-            </View>
-          </View>
-        </ImageBackground>
+        />
       </Pressable>
 
       <View style={styles.infoPanel}>
+        <Text style={styles.infoTitle}>{event.title}</Text>
+        <Text style={styles.infoMetaTop}>
+          {event.dateLabel} - {event.timeLabel}
+        </Text>
+        <Text style={styles.infoMetaTop}>
+          {event.category} / {event.subcategory} / {event.ageRating}
+        </Text>
         <View style={styles.actionRow}>
           <Pressable onPress={onToggleInterested} style={styles.actionBtn}>
             <Text style={styles.actionBtnLabel}>Interested</Text>
@@ -206,14 +196,14 @@ function FeedCard({
         </View>
 
         <Text style={styles.socialProof}>
-          {event.friendGoing} going • {event.friendInterested} interested
+          {event.friendGoing} going - {event.friendInterested} interested
         </Text>
         <Text style={styles.captionLine} numberOfLines={2}>
           <Text style={styles.captionHandle}>@{handle} </Text>
           {truncate(event.description, 140)}
         </Text>
         <Text style={styles.infoVenue} numberOfLines={1}>
-          {event.venue} • {event.address}
+          {event.venue} - {event.address}
         </Text>
         <View style={styles.postFooterRow}>
           <Text style={styles.intentText}>Status: {intentLabel(intent)}</Text>
@@ -465,84 +455,20 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  flyerTintTop: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 120,
-    backgroundColor: '#00000055',
-  },
-  flyerTintBottom: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 220,
-    backgroundColor: '#00000077',
-  },
-  flyerOverlay: {
-    flex: 1,
-    justifyContent: 'space-between',
-    padding: 14,
-  },
-  flyerContent: {
-    gap: 8,
-    paddingBottom: 10,
-  },
-  flyerTitle: {
-    color: theme.text,
-    fontWeight: '900',
-    fontSize: 36,
-    lineHeight: 40,
-    maxWidth: '94%',
-    textShadowColor: '#000000b8',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
-  },
-  flyerMeta: {
-    color: '#fff6ffcc',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  badge: {
-    backgroundColor: '#11111194',
-    color: theme.text,
-    fontSize: 10,
-    fontWeight: '700',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 999,
-    overflow: 'hidden',
-    textTransform: 'uppercase',
-  },
-  badgeMuted: {
-    backgroundColor: '#11111176',
-    color: theme.text,
-    fontSize: 10,
-    fontWeight: '700',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 999,
-    overflow: 'hidden',
-    textTransform: 'uppercase',
-  },
-  flyerHint: {
-    color: '#f8f0ffcd',
-    fontSize: 11,
-    fontWeight: '600',
-    paddingTop: 2,
-  },
   infoPanel: {
     paddingHorizontal: 10,
     paddingVertical: 10,
     gap: 6,
     backgroundColor: '#0f0c14',
+  },
+  infoTitle: {
+    color: theme.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  infoMetaTop: {
+    color: theme.textMuted,
+    fontSize: 11,
   },
   infoVenue: {
     color: theme.textMuted,
@@ -607,3 +533,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
