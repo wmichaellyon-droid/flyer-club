@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -18,6 +18,26 @@ interface FeedScreenProps {
   onOpenEvent: (eventId: string) => void;
   onToggleInterested: (eventId: string) => void;
   onSetGoing: (eventId: string) => void;
+}
+
+interface FeedRow {
+  id: string;
+  event: EventItem;
+}
+
+function buildFeedChunk(events: EventItem[], chunkIndex: number): FeedRow[] {
+  if (events.length === 0) {
+    return [];
+  }
+
+  const start = chunkIndex % events.length;
+  return Array.from({ length: events.length }, (_, idx) => {
+    const event = events[(start + idx) % events.length];
+    return {
+      id: `${event.id}__${chunkIndex}__${idx}`,
+      event,
+    };
+  });
 }
 
 function intentLabel(intent: IntentState) {
@@ -120,6 +140,15 @@ export function FeedScreen({
   onToggleInterested,
   onSetGoing,
 }: FeedScreenProps) {
+  const [chunkCount, setChunkCount] = useState(3);
+  const feedRows = useMemo(() => {
+    const rows: FeedRow[] = [];
+    for (let chunk = 0; chunk < chunkCount; chunk += 1) {
+      rows.push(...buildFeedChunk(events, chunk));
+    }
+    return rows;
+  }, [events, chunkCount]);
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
@@ -128,20 +157,27 @@ export function FeedScreen({
       </View>
 
       <FlatList
-        data={events}
+        data={feedRows}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         decelerationRate="fast"
         snapToAlignment="start"
         snapToInterval={350}
+        onEndReachedThreshold={0.6}
+        onEndReached={() => {
+          if (events.length > 0) {
+            setChunkCount((prev) => prev + 1);
+          }
+        }}
+        ListFooterComponent={<Text style={styles.footerText}>Loading more flyers...</Text>}
         renderItem={({ item }) => (
           <FeedCard
-            event={item}
-            intent={interactions[item.id]}
-            onOpenEvent={() => onOpenEvent(item.id)}
-            onToggleInterested={() => onToggleInterested(item.id)}
-            onSetGoing={() => onSetGoing(item.id)}
+            event={item.event}
+            intent={interactions[item.event.id]}
+            onOpenEvent={() => onOpenEvent(item.event.id)}
+            onToggleInterested={() => onToggleInterested(item.event.id)}
+            onSetGoing={() => onSetGoing(item.event.id)}
           />
         )}
       />
@@ -173,6 +209,12 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     paddingHorizontal: 12,
     gap: 14,
+  },
+  footerText: {
+    color: theme.textMuted,
+    fontSize: 12,
+    textAlign: 'center',
+    paddingVertical: 10,
   },
   card: {
     height: 330,

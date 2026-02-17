@@ -3,6 +3,22 @@ import { Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'reac
 import { theme } from '../theme';
 
 const statuses = ['Analyzing', 'Approved', 'Needs Review', 'Rejected'];
+const checks = [
+  'Event text detected (date/time/venue)',
+  'Flyer layout confidence',
+  'Not a selfie/photo/meme',
+  'Duplicate-spam risk check',
+];
+
+function checkState(status: string) {
+  if (status === 'Approved') {
+    return 'pass';
+  }
+  if (status === 'Rejected') {
+    return 'fail';
+  }
+  return 'pending';
+}
 
 export function UploadScreen() {
   const [flyerUrl, setFlyerUrl] = useState('');
@@ -54,6 +70,23 @@ export function UploadScreen() {
         <View style={styles.statusCard}>
           <Text style={styles.statusTitle}>AI Moderation Status</Text>
           <Text style={styles.statusValue}>{status}</Text>
+          <View style={styles.ruleList}>
+            {checks.map((check) => {
+              const state = checkState(status);
+              return (
+                <View key={check} style={styles.ruleRow}>
+                  <View
+                    style={[
+                      styles.ruleDot,
+                      state === 'pass' && styles.ruleDotPass,
+                      state === 'fail' && styles.ruleDotFail,
+                    ]}
+                  />
+                  <Text style={styles.ruleLabel}>{check}</Text>
+                </View>
+              );
+            })}
+          </View>
           <View style={styles.statusSwitchRow}>
             {statuses.map((item) => {
               const active = item === status;
@@ -142,6 +175,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
+  },
+  ruleList: {
+    gap: 6,
+    marginBottom: 4,
+  },
+  ruleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  ruleDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: theme.textMuted,
+  },
+  ruleDotPass: {
+    backgroundColor: theme.positive,
+  },
+  ruleDotFail: {
+    backgroundColor: '#ea5454',
+  },
+  ruleLabel: {
+    color: theme.textMuted,
+    fontSize: 12,
   },
   statusPill: {
     borderWidth: 1,

@@ -204,3 +204,4 @@ Detect whether uploaded content is an event flyer with high precision.
 - User flows: `docs/user-flows.md`
 - Six-screen spec: `docs/screen-spec-v1.md`
 - Technical framework: `docs/app-framework.md`
+- Flyer-only upload moderation guardrails: `docs/flyer-upload-guardrails.md`
