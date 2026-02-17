@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { DEFAULT_USER, LOGIN_QUESTIONS } from '../mockData';
 import { theme } from '../theme';
 import { EventTasteAnswers } from '../types';
@@ -194,6 +195,7 @@ export function LoginScreen({ onComplete }: LoginScreenProps) {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenBackdrop />
       <KeyboardAvoidingView
         style={styles.keyboardWrap}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

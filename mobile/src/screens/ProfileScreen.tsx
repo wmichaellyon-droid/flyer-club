@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { FlatList, Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { theme } from '../theme';
 import { EventItem, InteractionMap, IntentFilter, UserRole, UserSetup } from '../types';
 
@@ -49,6 +50,7 @@ export function ProfileScreen({ user, events, interactions, onOpenEvent, onSetIn
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenBackdrop />
       <View style={styles.container}>
         <Text style={styles.title}>Profile</Text>
         <View style={styles.identityRow}>

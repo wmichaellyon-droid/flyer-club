@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND } from '../mockData';
 import { theme } from '../theme';
 import { combineDateAndTime, defaultEventEndIso } from '../time';
@@ -196,6 +197,7 @@ export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateE
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenBackdrop />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Upload Event</Text>
         <Text style={styles.subtitle}>

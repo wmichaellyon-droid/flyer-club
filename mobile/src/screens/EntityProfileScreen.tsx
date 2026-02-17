@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { theme } from '../theme';
 import { EntityPageData } from '../types';
 
@@ -44,6 +45,7 @@ export function EntityProfileScreen({
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
+        <ScreenBackdrop />
         <View style={styles.loadingWrap}>
           <Text style={styles.loadingText}>Loading tagged profile...</Text>
         </View>
@@ -54,6 +56,7 @@ export function EntityProfileScreen({
   if (!pageData) {
     return (
       <SafeAreaView style={styles.safe}>
+        <ScreenBackdrop />
         <View style={styles.container}>
           <Pressable onPress={onBack} style={styles.backBtn}>
             <Text style={styles.backBtnLabel}>Back</Text>
@@ -72,6 +75,7 @@ export function EntityProfileScreen({
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenBackdrop />
       <View style={styles.container}>
         <Pressable onPress={onBack} style={styles.backBtn}>
           <Text style={styles.backBtnLabel}>Back</Text>

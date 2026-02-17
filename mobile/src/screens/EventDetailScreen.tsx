@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { theme } from '../theme';
 import { EventItem, IntentState, ReportReason } from '../types';
 
@@ -77,6 +78,7 @@ export function EventDetailScreen({
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenBackdrop />
       <ScrollView contentContainerStyle={styles.container}>
         <ImageBackground
           source={{ uri: event.flyerImageUrl }}

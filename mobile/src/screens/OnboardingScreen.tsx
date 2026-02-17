@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { AVAILABLE_INTERESTS, PROFILE_ROLES } from '../mockData';
 import { theme } from '../theme';
 import { UserRole, UserSetup } from '../types';
@@ -27,6 +28,7 @@ export function OnboardingScreen({ initialUser, onComplete }: OnboardingScreenPr
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenBackdrop />
       <View style={styles.container}>
         <Text style={styles.kicker}>Flyer Club</Text>
         <Text style={styles.title}>Find Austin events worth showing up for.</Text>

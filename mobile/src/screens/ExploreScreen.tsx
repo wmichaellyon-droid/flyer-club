@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND, EXPLORE_FILTERS } from '../mockData';
 import { milesFromUserToEvent } from '../geo';
 import { theme } from '../theme';
@@ -59,6 +60,7 @@ export function ExploreScreen({
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenBackdrop />
       <View style={styles.container}>
         <Text style={styles.title}>Explore</Text>
         <TextInput

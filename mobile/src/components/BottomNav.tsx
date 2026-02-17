@@ -20,6 +20,7 @@ export function BottomNav({ activeTab, onChange }: BottomNavProps) {
             onPress={() => onChange(tab)}
             style={[styles.tab, active && styles.tabActive]}
           >
+            <View style={[styles.tabDot, active && styles.tabDotActive]} />
             <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{tab}</Text>
           </Pressable>
         );
@@ -32,9 +33,9 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#0f0c14',
+    backgroundColor: '#0a1218f0',
     borderTopWidth: 1,
-    borderColor: '#ffffff1c',
+    borderColor: '#ffffff22',
     paddingHorizontal: 8,
     paddingVertical: 8,
   },
@@ -49,7 +50,17 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     backgroundColor: '#ffffff0f',
-    borderColor: '#ffffff2a',
+    borderColor: '#ffffff35',
+  },
+  tabDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 999,
+    marginBottom: 5,
+    backgroundColor: '#6f8796',
+  },
+  tabDotActive: {
+    backgroundColor: theme.primary,
   },
   tabLabel: {
     color: theme.textMuted,

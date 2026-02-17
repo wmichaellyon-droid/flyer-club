@@ -3,6 +3,7 @@ import * as Location from 'expo-location';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { BottomNav } from './src/components/BottomNav';
+import { ScreenBackdrop } from './src/components/ScreenBackdrop';
 import { AUSTIN_EVENTS, DEFAULT_USER } from './src/mockData';
 import { shareEvent, shareEventBySms, parseSharedEventId } from './src/share';
 import { EventDetailScreen } from './src/screens/EventDetailScreen';
@@ -99,6 +100,7 @@ function inferInterestsFromAnswers(answers: EventTasteAnswers) {
 function LoadingScreen({ label }: { label: string }) {
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenBackdrop />
       <StatusBar style="light" />
       <View style={styles.loadingWrap}>
         <Text style={styles.loadingTitle}>Flyer Club</Text>

@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { milesFromUserToEvent } from '../geo';
 import { theme } from '../theme';
 import { EventItem, InteractionMap, IntentState, RadiusFilter, UserLocation, UserSetup } from '../types';
@@ -270,6 +271,7 @@ export function FeedScreen({
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenBackdrop />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>For You</Text>
         <Text style={styles.headerSub}>Live flyers in {user.city}</Text>

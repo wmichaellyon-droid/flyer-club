@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND, EXPLORE_FILTERS } from '../mockData';
 import { milesBetweenPoints, milesFromUserToEvent } from '../geo';
 import { theme } from '../theme';
@@ -186,6 +187,7 @@ export function MapScreen({
 
   return (
     <SafeAreaView style={styles.safe}>
+      <ScreenBackdrop />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Map</Text>
         <Text style={styles.headerSub}>Satellite view near {user.city} with live event pins.</Text>
