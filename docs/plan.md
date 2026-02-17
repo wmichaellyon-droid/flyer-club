@@ -197,3 +197,10 @@ Detect whether uploaded content is an event flyer with high precision.
 3. Notification design (reminders vs spam boundaries).
 4. Exact ranking formula v1 and exploration strategy.
 5. Launch city acquisition strategy and promoter onboarding kit.
+
+## 18. Build Docs Added
+
+- MVP decisions: `docs/mvp-decisions.md`
+- User flows: `docs/user-flows.md`
+- Six-screen spec: `docs/screen-spec-v1.md`
+- Technical framework: `docs/app-framework.md`
