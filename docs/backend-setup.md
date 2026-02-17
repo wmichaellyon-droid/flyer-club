@@ -23,7 +23,24 @@ If env vars are missing, the app falls back to local mock mode.
 - Feed/Map/Explore only show `accepted` events.
 - Upload tab shows submission queue and allows manual status changes.
 
-## 3. Geolocation + Radius
+## 3. Flyer Tagging (Bands/People/Venues/Promoters)
+
+- Upload flow supports tap-to-place tags directly on the flyer image.
+- Tag payload stores:
+  - entity name
+  - kind (`band`, `person`, `promoter`, `venue`, `collective`)
+  - public/private setting
+  - x/y normalized coordinates on the flyer
+- Supabase tables:
+  - `entities`
+  - `event_entities`
+- Public tags can be opened from event detail and route to an entity profile page.
+- Entity profile page includes:
+  - flyers uploaded by that entity (where possible)
+  - flyers where that entity is tagged/involved
+- Promoter + venue tags are auto-public to keep discovery consistent.
+
+## 4. Geolocation + Radius
 
 - Radius options are shared across Feed, Map, and Explore:
   - `2 mi`
@@ -32,19 +49,19 @@ If env vars are missing, the app falls back to local mock mode.
   - `Citywide`
 - Location permission is requested after onboarding.
 
-## 4. Push Reminders
+## 5. Push Reminders
 
 - Local notifications are scheduled for `Saved` or `Going` events at:
   - 24 hours before
   - 2 hours before
 - Reminders are cancelled when intent is cleared.
 
-## 5. Calendar Integration
+## 6. Calendar Integration
 
 - Event detail has `Add Calendar`.
 - Uses device calendar permission and writes event into the default editable calendar.
 
-## 6. Safety Flows
+## 7. Safety Flows
 
 - Event detail includes:
   - report event with reason + details
@@ -53,7 +70,7 @@ If env vars are missing, the app falls back to local mock mode.
   - `event_reports`
   - `user_blocks`
 
-## 7. Analytics
+## 8. Analytics
 
 - Instrumented events are written to `analytics_events`.
 - Included in-app:

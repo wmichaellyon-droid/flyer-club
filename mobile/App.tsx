@@ -6,6 +6,7 @@ import { BottomNav } from './src/components/BottomNav';
 import { AUSTIN_EVENTS, DEFAULT_USER } from './src/mockData';
 import { shareEvent, shareEventBySms, parseSharedEventId } from './src/share';
 import { EventDetailScreen } from './src/screens/EventDetailScreen';
+import { EntityProfileScreen } from './src/screens/EntityProfileScreen';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { FeedScreen } from './src/screens/FeedScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -18,6 +19,7 @@ import {
   blockUser,
   createEventSubmission,
   ensureAuthUser,
+  fetchEntityPageData,
   fetchBlockedUserIds,
   fetchEvents,
   fetchInteractions,
@@ -114,6 +116,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('Feed');
   const [radiusFilter, setRadiusFilter] = useState<RadiusFilter>(10);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   const [pendingSharedEventId, setPendingSharedEventId] = useState<string | null>(null);
   const [user, setUser] = useState<UserSetup>(DEFAULT_USER);
   const [events, setEvents] = useState(AUSTIN_EVENTS);
@@ -322,7 +325,12 @@ export default function App() {
   };
 
   const onOpenEvent = (eventId: string) => {
+    setSelectedEntityId(null);
     setSelectedEventId(eventId);
+  };
+
+  const onOpenEntity = (entityId: string) => {
+    setSelectedEntityId(entityId);
   };
 
   const onShareEvent = async (event: (typeof AUSTIN_EVENTS)[number], destination: 'native' | 'sms') => {
@@ -405,6 +413,23 @@ export default function App() {
     );
   }
 
+  if (selectedEntityId) {
+    return (
+      <>
+        <StatusBar style="light" />
+        <EntityProfileScreen
+          entityId={selectedEntityId}
+          onBack={() => setSelectedEntityId(null)}
+          onOpenEvent={(eventId) => {
+            setSelectedEntityId(null);
+            setSelectedEventId(eventId);
+          }}
+          onLoadEntityPage={(entityId) => fetchEntityPageData(authUserId, entityId)}
+        />
+      </>
+    );
+  }
+
   if (selectedEvent) {
     return (
       <>
@@ -413,6 +438,7 @@ export default function App() {
           event={selectedEvent}
           intent={interactions[selectedEvent.id]}
           onBack={() => setSelectedEventId(null)}
+          onOpenEntity={onOpenEntity}
           onToggleInterested={() => onToggleInterested(selectedEvent.id)}
           onSetGoing={() => onSetGoing(selectedEvent.id)}
           onShareEvent={(destination) => onShareEvent(selectedEvent, destination)}

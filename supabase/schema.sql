@@ -46,6 +46,29 @@ create table if not exists public.events (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.entities (
+  id uuid primary key default gen_random_uuid(),
+  owner_user_id uuid references auth.users(id) on delete set null,
+  name text not null,
+  handle text not null,
+  kind text not null check (kind in ('band', 'person', 'promoter', 'venue', 'collective')),
+  is_public boolean not null default false,
+  bio text not null default '',
+  avatar_url text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.event_entities (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null references public.events(id) on delete cascade,
+  entity_id uuid not null references public.entities(id) on delete cascade,
+  tagged_by_user_id uuid not null references auth.users(id) on delete cascade,
+  x_ratio double precision not null check (x_ratio >= 0 and x_ratio <= 1),
+  y_ratio double precision not null check (y_ratio >= 0 and y_ratio <= 1),
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.interactions (
   user_id uuid not null references auth.users(id) on delete cascade,
   event_id uuid not null references public.events(id) on delete cascade,
@@ -88,6 +111,10 @@ create table if not exists public.analytics_events (
 
 create index if not exists idx_events_moderation_status on public.events (moderation_status);
 create index if not exists idx_events_city_start_at on public.events (city, start_at);
+create index if not exists idx_entities_handle_kind on public.entities (handle, kind);
+create index if not exists idx_entities_is_public on public.entities (is_public);
+create index if not exists idx_event_entities_event_id on public.event_entities (event_id);
+create index if not exists idx_event_entities_entity_id on public.event_entities (entity_id);
 create index if not exists idx_interactions_event_id on public.interactions (event_id);
 create index if not exists idx_shares_event_id on public.shares (event_id);
 create index if not exists idx_reports_event_id on public.event_reports (event_id);
@@ -95,6 +122,8 @@ create index if not exists idx_analytics_event_name_created on public.analytics_
 
 alter table public.profiles enable row level security;
 alter table public.events enable row level security;
+alter table public.entities enable row level security;
+alter table public.event_entities enable row level security;
 alter table public.interactions enable row level security;
 alter table public.shares enable row level security;
 alter table public.event_reports enable row level security;
@@ -124,6 +153,45 @@ for insert with check (posted_by = auth.uid());
 drop policy if exists "events_update_own" on public.events;
 create policy "events_update_own" on public.events
 for update using (posted_by = auth.uid());
+
+drop policy if exists "entities_select_public_or_owner" on public.entities;
+create policy "entities_select_public_or_owner" on public.entities
+for select using (is_public = true or owner_user_id = auth.uid());
+
+drop policy if exists "entities_insert_own" on public.entities;
+create policy "entities_insert_own" on public.entities
+for insert with check (owner_user_id = auth.uid());
+
+drop policy if exists "entities_update_own" on public.entities;
+create policy "entities_update_own" on public.entities
+for update using (owner_user_id = auth.uid()) with check (owner_user_id = auth.uid());
+
+drop policy if exists "event_entities_select_visible_events" on public.event_entities;
+create policy "event_entities_select_visible_events" on public.event_entities
+for select using (
+  exists (
+    select 1
+    from public.events e
+    where e.id = event_entities.event_id
+      and (e.moderation_status = 'accepted' or e.posted_by = auth.uid())
+  )
+);
+
+drop policy if exists "event_entities_insert_own_event" on public.event_entities;
+create policy "event_entities_insert_own_event" on public.event_entities
+for insert with check (
+  tagged_by_user_id = auth.uid()
+  and exists (
+    select 1
+    from public.events e
+    where e.id = event_entities.event_id
+      and e.posted_by = auth.uid()
+  )
+);
+
+drop policy if exists "event_entities_delete_own_tag" on public.event_entities;
+create policy "event_entities_delete_own_tag" on public.event_entities
+for delete using (tagged_by_user_id = auth.uid());
 
 drop policy if exists "interactions_select_own" on public.interactions;
 create policy "interactions_select_own" on public.interactions

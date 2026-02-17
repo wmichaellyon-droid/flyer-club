@@ -16,6 +16,7 @@ interface EventDetailScreenProps {
   event: EventItem;
   intent: IntentState;
   onBack: () => void;
+  onOpenEntity: (entityId: string) => void;
   onToggleInterested: () => void;
   onSetGoing: () => void;
   onShareEvent: (destination: 'native' | 'sms') => Promise<void>;
@@ -37,6 +38,7 @@ export function EventDetailScreen({
   event,
   intent,
   onBack,
+  onOpenEntity,
   onToggleInterested,
   onSetGoing,
   onShareEvent,
@@ -49,6 +51,7 @@ export function EventDetailScreen({
   const [reportDetails, setReportDetails] = useState('');
   const [reportState, setReportState] = useState<'idle' | 'sent' | 'error'>('idle');
   const [actionBusy, setActionBusy] = useState(false);
+  const [heroSize, setHeroSize] = useState({ width: 1, height: 1 });
 
   const submitReport = async () => {
     setActionBusy(true);
@@ -80,6 +83,12 @@ export function EventDetailScreen({
           resizeMode="cover"
           style={[styles.hero, { backgroundColor: event.heroColor }]}
           imageStyle={styles.heroImage}
+          onLayout={(layoutEvent) =>
+            setHeroSize({
+              width: layoutEvent.nativeEvent.layout.width,
+              height: layoutEvent.nativeEvent.layout.height,
+            })
+          }
         >
           <View style={styles.heroTint} />
           <Pressable onPress={onBack} style={styles.backBtn}>
@@ -90,6 +99,23 @@ export function EventDetailScreen({
             <Text style={styles.heroTitle}>{event.title}</Text>
             <Text style={styles.heroPromoter}>{event.promoter}</Text>
           </View>
+          {event.flyerTags
+            .filter((tag) => tag.isPublic)
+            .map((tag) => (
+              <Pressable
+                key={tag.id}
+                onPress={() => onOpenEntity(tag.entityId)}
+                style={[
+                  styles.heroTagPin,
+                  {
+                    left: Math.max(8, Math.min(heroSize.width - 24, tag.x * heroSize.width - 10)),
+                    top: Math.max(50, Math.min(heroSize.height - 20, tag.y * heroSize.height - 10)),
+                  },
+                ]}
+              >
+                <Text style={styles.heroTagPinLabel}>@</Text>
+              </Pressable>
+            ))}
         </ImageBackground>
 
         <View style={styles.card}>
@@ -132,6 +158,27 @@ export function EventDetailScreen({
             ))}
           </View>
         </View>
+
+        {event.flyerTags.some((tag) => tag.isPublic) && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Tagged on Flyer</Text>
+            <View style={styles.taggedEntityRow}>
+              {event.flyerTags
+                .filter((tag) => tag.isPublic)
+                .map((tag) => (
+                  <Pressable
+                    key={`tag_profile_${tag.id}`}
+                    style={styles.taggedEntityChip}
+                    onPress={() => onOpenEntity(tag.entityId)}
+                  >
+                    <Text style={styles.taggedEntityLabel}>
+                      {tag.entityName} ({tag.entityKind})
+                    </Text>
+                  </Pressable>
+                ))}
+            </View>
+          </View>
+        )}
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Safety</Text>
@@ -252,6 +299,22 @@ const styles = StyleSheet.create({
     color: '#f3e9ffcc',
     fontWeight: '600',
   },
+  heroTagPin: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderRadius: 999,
+    backgroundColor: '#ca4effd0',
+    borderWidth: 1,
+    borderColor: '#ffffffc2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTagPinLabel: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
   card: {
     marginHorizontal: 12,
     backgroundColor: theme.surface,
@@ -333,6 +396,24 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingHorizontal: 8,
     paddingVertical: 4,
+  },
+  taggedEntityRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  taggedEntityChip: {
+    borderWidth: 1,
+    borderColor: theme.primary,
+    backgroundColor: '#ffffff10',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  taggedEntityLabel: {
+    color: theme.text,
+    fontSize: 11,
+    fontWeight: '700',
   },
   safetyHint: {
     color: theme.textMuted,

@@ -4,6 +4,7 @@ export type IntentState = 'interested' | 'going' | 'saved' | undefined;
 export type StoredIntentState = 'interested' | 'going' | 'saved';
 export type ModerationStatus = 'accepted' | 'review' | 'rejected';
 export type RadiusFilter = 2 | 5 | 10 | 'city';
+export type EntityKind = 'band' | 'person' | 'promoter' | 'venue' | 'collective';
 
 export type IntentFilter = 'Interested' | 'Going' | 'Saved';
 
@@ -48,6 +49,7 @@ export interface EventItem {
   postedByRole: UserRole;
   moderationStatus: ModerationStatus;
   moderationReason?: string;
+  flyerTags: FlyerTag[];
 }
 
 export interface UserSetup {
@@ -87,6 +89,43 @@ export interface EventDraft {
   flyerImageUrl: string;
   heroColor: string;
   description: string;
+  flyerTags: FlyerTagDraft[];
+}
+
+export interface EntityProfile {
+  id: string;
+  ownerUserId?: string;
+  name: string;
+  handle: string;
+  kind: EntityKind;
+  isPublic: boolean;
+  bio?: string;
+  avatarUrl?: string;
+}
+
+export interface EntityPageData {
+  entity: EntityProfile;
+  uploadedEvents: EventItem[];
+  involvedEvents: EventItem[];
+}
+
+export interface FlyerTag {
+  id: string;
+  eventId: string;
+  entityId: string;
+  entityName: string;
+  entityKind: EntityKind;
+  isPublic: boolean;
+  x: number;
+  y: number;
+}
+
+export interface FlyerTagDraft {
+  entityName: string;
+  entityKind: EntityKind;
+  isPublic: boolean;
+  x: number;
+  y: number;
 }
 
 export type ReportReason =

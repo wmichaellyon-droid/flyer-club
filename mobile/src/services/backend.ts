@@ -3,8 +3,13 @@ import { milesBetweenPoints } from '../geo';
 import { supabase } from '../lib/supabase';
 import { formatDateLabel, formatTimeRangeLabel } from '../time';
 import {
+  EntityKind,
+  EntityPageData,
+  EntityProfile,
   EventDraft,
   EventItem,
+  FlyerTag,
+  FlyerTagDraft,
   InteractionMap,
   IntentState,
   ModerationStatus,
@@ -57,6 +62,26 @@ type ProfileRow = {
   taste_answers: Record<string, string> | null;
 };
 
+type EntityRow = {
+  id: string;
+  owner_user_id: string | null;
+  name: string;
+  handle: string;
+  kind: EntityKind;
+  is_public: boolean;
+  bio: string | null;
+  avatar_url: string | null;
+  created_at: string;
+};
+
+type EventEntityRow = {
+  id: string;
+  event_id: string;
+  entity_id: string;
+  x_ratio: number;
+  y_ratio: number;
+};
+
 const localEvents: EventItem[] = [...AUSTIN_EVENTS];
 const localInteractions: Record<string, InteractionMap> = {};
 const localBlocked: Record<string, Set<string>> = {};
@@ -68,10 +93,46 @@ const localReports: {
   details: string;
   createdAt: string;
 }[] = [];
+const localEntities = new Map<string, EntityProfile>();
+
+for (const event of localEvents) {
+  for (const tag of event.flyerTags) {
+    if (!localEntities.has(tag.entityId)) {
+      localEntities.set(tag.entityId, {
+        id: tag.entityId,
+        name: tag.entityName,
+        handle: normalizeHandle(tag.entityName),
+        kind: tag.entityKind,
+        isPublic: tag.isPublic,
+        ownerUserId:
+          tag.entityKind === 'promoter' && tag.entityName.toLowerCase() === event.promoter.toLowerCase()
+            ? event.postedByUserId
+            : undefined,
+      });
+    }
+  }
+}
+
+function normalizeHandle(name: string) {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+}
+
+function shouldAutoPublic(kind: EntityKind, requestedPublic: boolean) {
+  if (requestedPublic) {
+    return true;
+  }
+  return kind === 'promoter' || kind === 'venue';
+}
 
 function eventFromRow(
   row: EventRow,
   interactionCounts: Record<string, { interested: number; going: number }>,
+  flyerTagsByEvent: Record<string, FlyerTag[]>,
 ): EventItem {
   const counts = interactionCounts[row.id] ?? { interested: 0, going: 0 };
   return {
@@ -107,6 +168,7 @@ function eventFromRow(
     postedByRole: row.posted_by_role,
     moderationStatus: row.moderation_status,
     moderationReason: row.moderation_reason ?? undefined,
+    flyerTags: flyerTagsByEvent[row.id] ?? [],
   };
 }
 
@@ -119,6 +181,176 @@ function buildLocalInteractionCounts(events: EventItem[]) {
     };
   }
   return counts;
+}
+
+function entityFromRow(row: EntityRow): EntityProfile {
+  return {
+    id: row.id,
+    ownerUserId: row.owner_user_id ?? undefined,
+    name: row.name,
+    handle: row.handle,
+    kind: row.kind,
+    isPublic: row.is_public,
+    bio: row.bio ?? undefined,
+    avatarUrl: row.avatar_url ?? undefined,
+  };
+}
+
+function tagFromRows(eventId: string, tagRow: EventEntityRow, entity: EntityProfile): FlyerTag {
+  return {
+    id: tagRow.id,
+    eventId,
+    entityId: entity.id,
+    entityName: entity.name,
+    entityKind: entity.kind,
+    isPublic: entity.isPublic,
+    x: Number(tagRow.x_ratio),
+    y: Number(tagRow.y_ratio),
+  };
+}
+
+function matchesEntityUpload(entity: EntityProfile, event: EventItem) {
+  const normalize = (value: string) => value.trim().toLowerCase();
+
+  if (entity.ownerUserId && event.postedByUserId === entity.ownerUserId) {
+    return true;
+  }
+  if (entity.kind === 'promoter' && normalize(event.promoter) === normalize(entity.name)) {
+    return true;
+  }
+  if (entity.kind === 'venue' && normalize(event.venue) === normalize(entity.name)) {
+    return true;
+  }
+  return false;
+}
+
+function dedupeEvents(events: EventItem[]) {
+  const map = new Map<string, EventItem>();
+  for (const event of events) {
+    if (!map.has(event.id)) {
+      map.set(event.id, event);
+    }
+  }
+  return Array.from(map.values());
+}
+
+function createLocalEntityFromTag(userId: string, tag: FlyerTagDraft): EntityProfile {
+  const isPublic = shouldAutoPublic(tag.entityKind, tag.isPublic);
+  const handle = normalizeHandle(tag.entityName);
+  const existing = Array.from(localEntities.values()).find(
+    (entity) => entity.handle === handle && entity.kind === tag.entityKind,
+  );
+  if (existing) {
+    if (isPublic && !existing.isPublic) {
+      existing.isPublic = true;
+      localEntities.set(existing.id, existing);
+    }
+    return existing;
+  }
+
+  const id = `local_ent_${Date.now()}_${Math.random().toString(16).slice(2, 7)}`;
+  const entity: EntityProfile = {
+    id,
+    ownerUserId: userId,
+    name: tag.entityName,
+    handle,
+    kind: tag.entityKind,
+    isPublic,
+  };
+  localEntities.set(entity.id, entity);
+  return entity;
+}
+
+async function upsertEntityFromTag(userId: string, tag: FlyerTagDraft) {
+  if (!supabase || userId === 'local-dev-user') {
+    return createLocalEntityFromTag(userId, tag);
+  }
+
+  const isPublic = shouldAutoPublic(tag.entityKind, tag.isPublic);
+  const handle = normalizeHandle(tag.entityName);
+  const { data: existing } = await supabase
+    .from('entities')
+    .select('id,owner_user_id,name,handle,kind,is_public,bio,avatar_url,created_at')
+    .eq('handle', handle)
+    .eq('kind', tag.entityKind)
+    .limit(1)
+    .maybeSingle<EntityRow>();
+
+  if (existing) {
+    if (isPublic && !existing.is_public) {
+      await supabase.from('entities').update({ is_public: true }).eq('id', existing.id);
+      existing.is_public = true;
+    }
+    return entityFromRow(existing);
+  }
+
+  const { data, error } = await supabase
+    .from('entities')
+    .insert({
+      owner_user_id: userId,
+      name: tag.entityName,
+      handle,
+      kind: tag.entityKind,
+      is_public: isPublic,
+      bio: '',
+    })
+    .select('id,owner_user_id,name,handle,kind,is_public,bio,avatar_url,created_at')
+    .single<EntityRow>();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? 'Could not create entity profile for tag.');
+  }
+  return entityFromRow(data);
+}
+
+async function loadFlyerTagsByEvent(eventIds: string[]) {
+  const flyerTagsByEvent: Record<string, FlyerTag[]> = {};
+  if (eventIds.length === 0) {
+    return flyerTagsByEvent;
+  }
+
+  if (!supabase) {
+    const map = new Map(localEvents.map((event) => [event.id, event]));
+    for (const eventId of eventIds) {
+      flyerTagsByEvent[eventId] = map.get(eventId)?.flyerTags ?? [];
+    }
+    return flyerTagsByEvent;
+  }
+
+  const { data: eventTagsRows, error: tagError } = await supabase
+    .from('event_entities')
+    .select('id,event_id,entity_id,x_ratio,y_ratio')
+    .in('event_id', eventIds)
+    .returns<EventEntityRow[]>();
+
+  if (tagError || !eventTagsRows || eventTagsRows.length === 0) {
+    return flyerTagsByEvent;
+  }
+
+  const entityIds = Array.from(new Set(eventTagsRows.map((row) => row.entity_id)));
+  const { data: entityRows } = await supabase
+    .from('entities')
+    .select('id,owner_user_id,name,handle,kind,is_public,bio,avatar_url,created_at')
+    .in('id', entityIds)
+    .returns<EntityRow[]>();
+
+  const entityById = new Map<string, EntityProfile>();
+  for (const row of entityRows ?? []) {
+    entityById.set(row.id, entityFromRow(row));
+  }
+
+  for (const row of eventTagsRows) {
+    const entity = entityById.get(row.entity_id);
+    if (!entity || !entity.isPublic) {
+      continue;
+    }
+    if (!flyerTagsByEvent[row.event_id]) {
+      flyerTagsByEvent[row.event_id] = [];
+    }
+    flyerTagsByEvent[row.event_id].push(tagFromRows(row.event_id, row, entity));
+  }
+
+  return flyerTagsByEvent;
 }
 
 export async function ensureAuthUser() {
@@ -189,7 +421,9 @@ export async function upsertProfile(userId: string, profile: UserSetup) {
 export async function fetchEvents(params: { includeUnmoderated?: boolean; onlyUserId?: string } = {}) {
   const { includeUnmoderated = false, onlyUserId } = params;
   if (!supabase) {
-    const source = includeUnmoderated ? localEvents : localEvents.filter((event) => event.moderationStatus === 'accepted');
+    const source = includeUnmoderated
+      ? localEvents
+      : localEvents.filter((event) => event.moderationStatus === 'accepted');
     return onlyUserId ? source.filter((event) => event.postedByUserId === onlyUserId) : source;
   }
 
@@ -209,7 +443,9 @@ export async function fetchEvents(params: { includeUnmoderated?: boolean; onlyUs
 
   const { data, error } = await query.returns<EventRow[]>();
   if (error || !data || data.length === 0) {
-    const source = includeUnmoderated ? localEvents : localEvents.filter((event) => event.moderationStatus === 'accepted');
+    const source = includeUnmoderated
+      ? localEvents
+      : localEvents.filter((event) => event.moderationStatus === 'accepted');
     return onlyUserId ? source.filter((event) => event.postedByUserId === onlyUserId) : source;
   }
 
@@ -235,7 +471,55 @@ export async function fetchEvents(params: { includeUnmoderated?: boolean; onlyUs
     }
   }
 
-  return data.map((row) => eventFromRow(row, counts));
+  const flyerTagsByEvent = await loadFlyerTagsByEvent(eventIds);
+  return data.map((row) => eventFromRow(row, counts, flyerTagsByEvent));
+}
+
+export async function fetchEntityPageData(userId: string, entityId: string): Promise<EntityPageData | null> {
+  if (!supabase || userId === 'local-dev-user') {
+    const entity = localEntities.get(entityId);
+    if (!entity) {
+      return null;
+    }
+    if (!entity.isPublic && entity.ownerUserId !== userId) {
+      return null;
+    }
+    const accepted = localEvents.filter((event) => event.moderationStatus === 'accepted');
+    const uploadedEvents = accepted.filter((event) => matchesEntityUpload(entity, event));
+    const involvedEvents = accepted.filter((event) => event.flyerTags.some((tag) => tag.entityId === entityId));
+    return {
+      entity,
+      uploadedEvents: dedupeEvents(uploadedEvents),
+      involvedEvents: dedupeEvents(involvedEvents),
+    };
+  }
+
+  const { data: entityRow } = await supabase
+    .from('entities')
+    .select('id,owner_user_id,name,handle,kind,is_public,bio,avatar_url,created_at')
+    .eq('id', entityId)
+    .maybeSingle<EntityRow>();
+
+  if (!entityRow) {
+    return null;
+  }
+
+  const entity = entityFromRow(entityRow);
+  if (!entity.isPublic && entity.ownerUserId !== userId) {
+    return null;
+  }
+
+  const acceptedEvents = await fetchEvents({ includeUnmoderated: false });
+  const uploadedEvents = acceptedEvents.filter((event) => matchesEntityUpload(entity, event));
+  const involvedEvents = acceptedEvents.filter((event) =>
+    event.flyerTags.some((tag) => tag.entityId === entityId),
+  );
+
+  return {
+    entity,
+    uploadedEvents: dedupeEvents(uploadedEvents),
+    involvedEvents: dedupeEvents(involvedEvents),
+  };
 }
 
 export async function fetchInteractions(userId: string): Promise<InteractionMap> {
@@ -289,11 +573,7 @@ export async function saveInteraction(userId: string, eventId: string, intent: I
   );
 }
 
-export async function createEventSubmission(
-  userId: string,
-  role: UserRole,
-  draft: EventDraft,
-) {
+export async function createEventSubmission(userId: string, role: UserRole, draft: EventDraft) {
   const moderation = evaluateFlyerDraft(draft);
 
   const eventInsert = {
@@ -324,8 +604,25 @@ export async function createEventSubmission(
   };
 
   if (!supabase || userId === 'local-dev-user') {
+    const eventId = `local_${Date.now()}`;
+    const flyerTags: FlyerTag[] = [];
+
+    for (const tagDraft of draft.flyerTags) {
+      const entity = createLocalEntityFromTag(userId, tagDraft);
+      flyerTags.push({
+        id: `local_tag_${Date.now()}_${Math.random().toString(16).slice(2, 6)}`,
+        eventId,
+        entityId: entity.id,
+        entityName: entity.name,
+        entityKind: entity.kind,
+        isPublic: entity.isPublic,
+        x: tagDraft.x,
+        y: tagDraft.y,
+      });
+    }
+
     const localEvent: EventItem = {
-      id: `local_${Date.now()}`,
+      id: eventId,
       title: draft.title,
       promoter: draft.promoter,
       postedByUserId: userId,
@@ -357,6 +654,7 @@ export async function createEventSubmission(
       postedByRole: role,
       moderationStatus: moderation.status,
       moderationReason: moderation.reason,
+      flyerTags,
     };
     localEvents.unshift(localEvent);
     return {
@@ -377,17 +675,38 @@ export async function createEventSubmission(
     throw new Error(error?.message ?? 'Failed to create event');
   }
 
+  const flyerTags: FlyerTag[] = [];
+  for (const tagDraft of draft.flyerTags) {
+    const entity = await upsertEntityFromTag(userId, tagDraft);
+    const { data: eventTagRow, error: eventTagError } = await supabase
+      .from('event_entities')
+      .insert({
+        event_id: data.id,
+        entity_id: entity.id,
+        tagged_by_user_id: userId,
+        x_ratio: tagDraft.x,
+        y_ratio: tagDraft.y,
+      })
+      .select('id,event_id,entity_id,x_ratio,y_ratio')
+      .single<EventEntityRow>();
+
+    if (eventTagError || !eventTagRow) {
+      continue;
+    }
+
+    flyerTags.push(tagFromRows(data.id, eventTagRow, entity));
+  }
+
   return {
-    event: eventFromRow(data, {}),
+    event: {
+      ...eventFromRow(data, {}, {}),
+      flyerTags,
+    },
     moderation,
   };
 }
 
-export async function setEventModerationStatus(
-  eventId: string,
-  status: ModerationStatus,
-  reason: string,
-) {
+export async function setEventModerationStatus(eventId: string, status: ModerationStatus, reason: string) {
   if (!supabase) {
     const item = localEvents.find((event) => event.id === eventId);
     if (item) {
@@ -436,12 +755,7 @@ export async function blockUser(blockerUserId: string, blockedUserId: string) {
   );
 }
 
-export async function reportEvent(
-  userId: string,
-  eventId: string,
-  reason: ReportReason,
-  details: string,
-) {
+export async function reportEvent(userId: string, eventId: string, reason: ReportReason, details: string) {
   if (!supabase || userId === 'local-dev-user') {
     localReports.push({
       userId,
@@ -481,11 +795,7 @@ export async function logShare(userId: string, eventId: string, destination: str
   });
 }
 
-export async function logAnalytics(
-  userId: string,
-  eventName: string,
-  payload: Record<string, unknown> = {},
-) {
+export async function logAnalytics(userId: string, eventName: string, payload: Record<string, unknown> = {}) {
   if (!supabase || userId === 'local-dev-user') {
     return;
   }

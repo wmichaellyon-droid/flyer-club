@@ -1,9 +1,26 @@
 import { useMemo, useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ImageBackground,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { EVENT_KIND_FILTERS, EVENT_SUBCATEGORIES_BY_KIND } from '../mockData';
 import { theme } from '../theme';
 import { combineDateAndTime, defaultEventEndIso } from '../time';
-import { EventDraft, EventItem, EventKind, ModerationStatus, UserRole } from '../types';
+import {
+  EntityKind,
+  EventDraft,
+  EventItem,
+  EventKind,
+  FlyerTagDraft,
+  ModerationStatus,
+  UserRole,
+} from '../types';
 
 interface UploadScreenProps {
   userRole: UserRole;
@@ -12,11 +29,23 @@ interface UploadScreenProps {
   onModerateEvent: (eventId: string, status: ModerationStatus, reason: string) => Promise<void>;
 }
 
+const entityKinds: EntityKind[] = ['band', 'person', 'promoter', 'venue', 'collective'];
+
 const communityRules = [
   'Anyone can upload flyers',
   'Only flyer-format posts pass moderation',
-  'Missing details get sent to review or rejected',
+  'Tap flyer to place tags for bands/people/venues/promoters',
 ];
+
+function clampUnit(value: number) {
+  if (value < 0) {
+    return 0;
+  }
+  if (value > 1) {
+    return 1;
+  }
+  return value;
+}
 
 export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateEvent }: UploadScreenProps) {
   const [title, setTitle] = useState('');
@@ -43,8 +72,14 @@ export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateE
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'done' | 'error'>('idle');
   const [submitMessage, setSubmitMessage] = useState('');
 
-  const isPromoter = userRole === 'promoter';
+  const [draftEntityName, setDraftEntityName] = useState('');
+  const [draftEntityKind, setDraftEntityKind] = useState<EntityKind>('band');
+  const [draftEntityPublic, setDraftEntityPublic] = useState(true);
+  const [taggingArmed, setTaggingArmed] = useState(false);
+  const [flyerTags, setFlyerTags] = useState<FlyerTagDraft[]>([]);
+  const [flyerLayout, setFlyerLayout] = useState({ width: 1, height: 1 });
 
+  const isPromoter = userRole === 'promoter';
   const availableSubcategories = useMemo(() => EVENT_SUBCATEGORIES_BY_KIND[kind], [kind]);
 
   const canSubmit = useMemo(() => {
@@ -58,6 +93,9 @@ export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateE
     );
   }, [title, promoter, date, venue, address, flyerImageUrl]);
 
+  const canArmTagging = draftEntityName.trim().length > 0;
+  const canPlaceTag = canArmTagging && flyerImageUrl.startsWith('http');
+
   const resetForm = () => {
     setTitle('');
     setPromoter('');
@@ -66,6 +104,31 @@ export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateE
     setAddress('');
     setNeighborhood('');
     setDescription('');
+    setFlyerTags([]);
+    setDraftEntityName('');
+    setTaggingArmed(false);
+  };
+
+  const onTapFlyer = (locationX: number, locationY: number) => {
+    if (!taggingArmed || !canPlaceTag) {
+      return;
+    }
+
+    const x = clampUnit(locationX / flyerLayout.width);
+    const y = clampUnit(locationY / flyerLayout.height);
+
+    setFlyerTags((prev) => [
+      ...prev,
+      {
+        entityName: draftEntityName.trim(),
+        entityKind: draftEntityKind,
+        isPublic: draftEntityPublic,
+        x,
+        y,
+      },
+    ]);
+    setTaggingArmed(false);
+    setDraftEntityName('');
   };
 
   const submit = async () => {
@@ -113,6 +176,7 @@ export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateE
       flyerImageUrl: flyerImageUrl.trim(),
       heroColor: heroColor.trim() || '#3a1b53',
       description: description.trim(),
+      flyerTags,
     };
 
     setSubmitState('submitting');
@@ -120,7 +184,9 @@ export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateE
     try {
       const result = await onSubmitEvent(draft);
       setSubmitState('done');
-      setSubmitMessage(`Moderation: ${result.moderationStatus.toUpperCase()} - ${result.moderationReason}`);
+      setSubmitMessage(
+        `Moderation: ${result.moderationStatus.toUpperCase()} - ${result.moderationReason}`,
+      );
       resetForm();
     } catch (error) {
       setSubmitState('error');
@@ -133,7 +199,7 @@ export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateE
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Upload Event</Text>
         <Text style={styles.subtitle}>
-          Community uploads are open to all users. Each flyer passes moderation before it appears in feeds.
+          Community uploads are open to all users. Tag bands, people, promoters, and venues directly on flyers.
         </Text>
 
         <View style={styles.card}>
@@ -309,6 +375,127 @@ export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateE
             value={flyerImageUrl}
             onChangeText={setFlyerImageUrl}
           />
+
+          <View style={styles.tagBuilderCard}>
+            <Text style={styles.tagBuilderTitle}>Flyer Tagging</Text>
+            <Text style={styles.tagHint}>
+              Add a name, choose type/public, then tap the flyer to place the tag.
+            </Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Band/person/promoter/venue name"
+              placeholderTextColor={theme.textMuted}
+              value={draftEntityName}
+              onChangeText={setDraftEntityName}
+            />
+
+            <View style={styles.chips}>
+              {entityKinds.map((value) => {
+                const active = value === draftEntityKind;
+                return (
+                  <Pressable
+                    key={value}
+                    style={[styles.chip, active && styles.chipActive]}
+                    onPress={() => setDraftEntityKind(value)}
+                  >
+                    <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{value}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={styles.row}>
+              <Pressable
+                style={[styles.visibilityBtn, draftEntityPublic && styles.visibilityBtnActive]}
+                onPress={() => setDraftEntityPublic(true)}
+              >
+                <Text style={[styles.visibilityLabel, draftEntityPublic && styles.visibilityLabelActive]}>
+                  Public Profile
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.visibilityBtn, !draftEntityPublic && styles.visibilityBtnActive]}
+                onPress={() => setDraftEntityPublic(false)}
+              >
+                <Text style={[styles.visibilityLabel, !draftEntityPublic && styles.visibilityLabelActive]}>
+                  Private Tag
+                </Text>
+              </Pressable>
+            </View>
+
+            <Pressable
+              onPress={() => setTaggingArmed((prev) => !prev)}
+              disabled={!canPlaceTag}
+              style={[
+                styles.armBtn,
+                !canPlaceTag && styles.submitBtnDisabled,
+                taggingArmed && styles.armBtnActive,
+              ]}
+            >
+              <Text style={styles.armBtnLabel}>
+                {taggingArmed ? 'Tap Flyer Now...' : 'Tap Flyer to Place Tag'}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={(event) => {
+                onTapFlyer(event.nativeEvent.locationX, event.nativeEvent.locationY);
+              }}
+              onLayout={(event) =>
+                setFlyerLayout({
+                  width: event.nativeEvent.layout.width,
+                  height: event.nativeEvent.layout.height,
+                })
+              }
+              style={styles.flyerPreviewWrap}
+            >
+              <ImageBackground
+                source={flyerImageUrl.startsWith('http') ? { uri: flyerImageUrl } : undefined}
+                resizeMode="cover"
+                style={styles.flyerPreview}
+              >
+                <View style={styles.flyerPreviewTint} />
+                {flyerTags.map((tag, index) => (
+                  <View
+                    key={`${tag.entityName}-${index}`}
+                    style={[
+                      styles.flyerTagPin,
+                      {
+                        left: `${Math.min(94, Math.max(4, tag.x * 100))}%`,
+                        top: `${Math.min(92, Math.max(4, tag.y * 100))}%`,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.flyerTagPinLabel}>{tag.entityName}</Text>
+                  </View>
+                ))}
+                {!flyerImageUrl.startsWith('http') && (
+                  <Text style={styles.flyerPreviewPlaceholder}>Paste a flyer URL to enable visual tagging.</Text>
+                )}
+              </ImageBackground>
+            </Pressable>
+
+            {flyerTags.length > 0 && (
+              <View style={styles.tagList}>
+                {flyerTags.map((tag, index) => (
+                  <View key={`${tag.entityName}-${index}`} style={styles.tagListItem}>
+                    <Text style={styles.tagListLabel}>
+                      {tag.entityName} ({tag.entityKind}) {tag.isPublic ? '- public' : '- private'}
+                    </Text>
+                    <Pressable
+                      onPress={() =>
+                        setFlyerTags((prev) => prev.filter((_, tagIndex) => tagIndex !== index))
+                      }
+                    >
+                      <Text style={styles.tagRemove}>Remove</Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
           <TextInput
             style={styles.input}
             placeholder="Hero color (#RRGGBB)"
@@ -325,7 +512,14 @@ export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateE
             multiline
           />
 
-          <Pressable onPress={() => void submit()} disabled={!canSubmit || submitState === 'submitting'} style={[styles.submitBtn, (!canSubmit || submitState === 'submitting') && styles.submitBtnDisabled]}>
+          <Pressable
+            onPress={() => void submit()}
+            disabled={!canSubmit || submitState === 'submitting'}
+            style={[
+              styles.submitBtn,
+              (!canSubmit || submitState === 'submitting') && styles.submitBtnDisabled,
+            ]}
+          >
             <Text style={styles.submitBtnLabel}>
               {submitState === 'submitting' ? 'Submitting...' : 'Submit Event'}
             </Text>
@@ -350,11 +544,14 @@ export function UploadScreen({ userRole, submissions, onSubmitEvent, onModerateE
                 {submission.moderationStatus.toUpperCase()}
                 {submission.moderationReason ? ` - ${submission.moderationReason}` : ''}
               </Text>
+              <Text style={styles.queueTagCount}>Tagged profiles: {submission.flyerTags.length}</Text>
               {(isPromoter || submission.moderationStatus === 'review') && (
                 <View style={styles.queueActions}>
                   <Pressable
                     style={[styles.queueBtn, styles.approveBtn]}
-                    onPress={() => void onModerateEvent(submission.id, 'accepted', 'Manual moderator approval')}
+                    onPress={() =>
+                      void onModerateEvent(submission.id, 'accepted', 'Manual moderator approval')
+                    }
                   >
                     <Text style={styles.queueBtnLabel}>Accept</Text>
                   </Pressable>
@@ -459,9 +656,130 @@ const styles = StyleSheet.create({
     color: theme.textMuted,
     fontSize: 11,
     fontWeight: '700',
+    textTransform: 'capitalize',
   },
   chipLabelActive: {
     color: theme.text,
+  },
+  tagBuilderCard: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 10,
+    backgroundColor: '#ffffff06',
+    padding: 10,
+    gap: 8,
+  },
+  tagBuilderTitle: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  tagHint: {
+    color: theme.textMuted,
+    fontSize: 11,
+  },
+  visibilityBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 999,
+    alignItems: 'center',
+    paddingVertical: 7,
+    backgroundColor: theme.surfaceAlt,
+  },
+  visibilityBtnActive: {
+    borderColor: theme.primary,
+    backgroundColor: theme.primary,
+  },
+  visibilityLabel: {
+    color: theme.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  visibilityLabelActive: {
+    color: theme.text,
+  },
+  armBtn: {
+    borderRadius: 10,
+    backgroundColor: '#3e3f62',
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  armBtnActive: {
+    backgroundColor: theme.primary,
+  },
+  armBtnLabel: {
+    color: theme.text,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  flyerPreviewWrap: {
+    borderWidth: 1,
+    borderColor: '#ffffff22',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  flyerPreview: {
+    width: '100%',
+    height: 280,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  flyerPreviewTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#00000044',
+  },
+  flyerPreviewPlaceholder: {
+    color: theme.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+    paddingHorizontal: 20,
+    textAlign: 'center',
+  },
+  flyerTagPin: {
+    position: 'absolute',
+    transform: [{ translateX: -10 }, { translateY: -10 }],
+    minWidth: 18,
+    minHeight: 18,
+    paddingHorizontal: 6,
+    borderRadius: 999,
+    backgroundColor: '#d54dffcc',
+    borderWidth: 1,
+    borderColor: '#ffffffbf',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flyerTagPinLabel: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  tagList: {
+    gap: 6,
+  },
+  tagListItem: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surfaceAlt,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  tagListLabel: {
+    color: theme.text,
+    fontSize: 11,
+    fontWeight: '600',
+    flexShrink: 1,
+  },
+  tagRemove: {
+    color: '#f28e8e',
+    fontSize: 11,
+    fontWeight: '700',
+    marginLeft: 8,
   },
   submitBtn: {
     backgroundColor: theme.primary,
@@ -511,6 +829,10 @@ const styles = StyleSheet.create({
     color: theme.primary,
     fontSize: 11,
     fontWeight: '700',
+  },
+  queueTagCount: {
+    color: theme.textMuted,
+    fontSize: 11,
   },
   queueActions: {
     flexDirection: 'row',
