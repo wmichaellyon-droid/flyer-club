@@ -43,24 +43,186 @@ interface FeedRow {
 
 const radiusOptions: RadiusFilter[] = [2, 5, 10, 'city'];
 
-function eventRankScore(event: EventItem, distanceMiles: number) {
-  const promoterWeight = event.postedByRole === 'promoter' ? 0.25 : 0;
-  const socialWeight = event.friendInterested * 0.02 + event.friendGoing * 0.03;
-  const distanceWeight = Math.max(0, 0.45 - distanceMiles * 0.035);
-  return promoterWeight + socialWeight + distanceWeight;
+const interestKeywordMap: Record<string, string[]> = {
+  diy: ['diy', 'zine', 'print', 'indie', 'underground'],
+  film: ['film', 'screening', 'arthouse', 'documentary', 'horror', 'cinema'],
+  zines: ['zine', 'print', 'art', 'collage'],
+  community: ['community', 'mutual aid', 'meetup', 'workshop', 'market'],
+  nightlife: ['nightlife', 'house', 'electronic', 'dance', 'club', 'dj'],
+  comedy: ['comedy', 'stand-up', 'improv', 'alt comedy'],
+};
+
+function normalizeText(value: string) {
+  return value.toLowerCase();
 }
 
-function buildFeedChunk(events: RankedEvent[], chunkIndex: number): FeedRow[] {
+function buildUserTasteCorpus(user: UserSetup) {
+  const answerText = Object.values(user.tasteAnswers).join(' ');
+  return normalizeText(`${user.interests.join(' ')} ${answerText}`);
+}
+
+function eventAffinityScore(event: EventItem, userTasteCorpus: string) {
+  const eventText = normalizeText(
+    [
+      event.title,
+      event.category,
+      event.subcategory,
+      event.tags.join(' '),
+      event.description,
+      event.kind,
+    ].join(' '),
+  );
+
+  let score = 0;
+  for (const [interestKey, keywords] of Object.entries(interestKeywordMap)) {
+    if (!userTasteCorpus.includes(interestKey)) {
+      continue;
+    }
+    const hasMatch = keywords.some((keyword) => eventText.includes(keyword));
+    if (hasMatch) {
+      score += 0.22;
+    }
+  }
+
+  return Math.min(score, 0.88);
+}
+
+function freshnessScore(startAtIso: string, nowMs: number) {
+  const daysUntil = (new Date(startAtIso).getTime() - nowMs) / (1000 * 60 * 60 * 24);
+  if (daysUntil < -2) {
+    return -0.3;
+  }
+  if (daysUntil < 0) {
+    return -0.08;
+  }
+  if (daysUntil <= 2) {
+    return 0.32;
+  }
+  if (daysUntil <= 7) {
+    return 0.23;
+  }
+  if (daysUntil <= 30) {
+    return 0.12;
+  }
+  return 0.04;
+}
+
+function intentPenalty(intent: IntentState) {
+  if (intent === 'going') {
+    return -0.5;
+  }
+  if (intent === 'interested') {
+    return -0.22;
+  }
+  if (intent === 'saved') {
+    return -0.12;
+  }
+  return 0;
+}
+
+function eventRankScore(
+  event: EventItem,
+  distanceMiles: number,
+  user: UserSetup,
+  intent: IntentState,
+  nowMs: number,
+) {
+  const userTasteCorpus = buildUserTasteCorpus(user);
+  const affinityWeight = eventAffinityScore(event, userTasteCorpus);
+  const promoterWeight = event.postedByRole === 'promoter' ? 0.08 : 0.02;
+  const socialWeight = Math.log1p(event.friendInterested * 0.8 + event.friendGoing * 1.2) * 0.16;
+  const distanceWeight = Math.max(0, 0.52 - distanceMiles * 0.055);
+  const recencyWeight = freshnessScore(event.startAtIso, nowMs);
+  const moderationWeight = event.moderationStatus === 'accepted' ? 0.06 : -0.2;
+  const roleWeight =
+    user.role === 'concert_lover' && event.kind === 'concert'
+      ? 0.1
+      : user.role === 'promoter' && event.postedByRole === 'promoter'
+        ? 0.08
+        : 0;
+
+  return (
+    affinityWeight +
+    promoterWeight +
+    socialWeight +
+    distanceWeight +
+    recencyWeight +
+    moderationWeight +
+    roleWeight +
+    intentPenalty(intent)
+  );
+}
+
+function stableNoise(seed: string) {
+  let hash = 2166136261;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash ^= seed.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  const normalized = (hash >>> 0) / 4294967295;
+  return normalized - 0.5;
+}
+
+function diversifyFeedOrder(rankedEvents: RankedEvent[]) {
+  const pool = [...rankedEvents];
+  const result: RankedEvent[] = [];
+  while (pool.length > 0) {
+    let bestIdx = 0;
+    let bestScore = -Infinity;
+
+    for (let idx = 0; idx < pool.length; idx += 1) {
+      const candidate = pool[idx];
+      let score = candidate.rankScore;
+      const last = result[result.length - 1];
+      const previous = result[result.length - 2];
+
+      if (last?.event.kind === candidate.event.kind) {
+        score -= 0.09;
+      }
+      if (previous?.event.kind === candidate.event.kind) {
+        score -= 0.04;
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestIdx = idx;
+      }
+    }
+
+    const [selected] = pool.splice(bestIdx, 1);
+    result.push(selected);
+  }
+
+  return result;
+}
+
+function buildFeedCycle(events: RankedEvent[], cycleIndex: number): FeedRow[] {
   if (events.length === 0) {
     return [];
   }
 
-  const start = chunkIndex % events.length;
-  return Array.from({ length: events.length }, (_, idx) => {
-    const rankedEvent = events[(start + idx) % events.length];
+  const cycleRanked = [...events]
+    .map((item, idx) => ({
+      ...item,
+      cycleScore:
+        item.rankScore +
+        stableNoise(`${item.event.id}:${cycleIndex}`) * 0.22 -
+        idx * 0.0015 * Math.min(cycleIndex, 20),
+    }))
+    .sort((a, b) => {
+      if (b.cycleScore !== a.cycleScore) {
+        return b.cycleScore - a.cycleScore;
+      }
+      return a.distanceMiles - b.distanceMiles;
+    });
+
+  const rotateBy = cycleIndex % cycleRanked.length;
+  const rotated = [...cycleRanked.slice(rotateBy), ...cycleRanked.slice(0, rotateBy)];
+
+  return rotated.map((item, idx) => {
     return {
-      id: `${rankedEvent.event.id}__${chunkIndex}__${idx}`,
-      rankedEvent,
+      id: `${item.event.id}__cycle_${cycleIndex}__${idx}`,
+      rankedEvent: item,
     };
   });
 }
@@ -268,7 +430,7 @@ export function FeedScreen({
 }: FeedScreenProps) {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
-  const [chunkCount, setChunkCount] = useState(3);
+  const [cycleCount, setCycleCount] = useState(5);
   const [feedback, setFeedback] = useState('');
   const { width } = useWindowDimensions();
   const flyerHeight = Math.round(width * 1.25);
@@ -294,12 +456,13 @@ export function FeedScreen({
   }, []);
 
   const rankedEvents = useMemo(() => {
+    const nowMs = Date.now();
     const withDistance = events.map((event) => {
       const distanceMiles = milesFromUserToEvent(userLocation, event);
       return {
         event,
         distanceMiles,
-        rankScore: eventRankScore(event, distanceMiles),
+        rankScore: eventRankScore(event, distanceMiles, user, interactions[event.id], nowMs),
       };
     });
 
@@ -307,21 +470,27 @@ export function FeedScreen({
     const inRadius = withDistance.filter((item) => item.distanceMiles <= radiusMiles);
     const source = inRadius.length > 0 ? inRadius : withDistance;
 
-    return source.sort((a, b) => {
+    const sorted = source.sort((a, b) => {
       if (b.rankScore !== a.rankScore) {
         return b.rankScore - a.rankScore;
       }
       return a.distanceMiles - b.distanceMiles;
     });
-  }, [events, userLocation, radiusFilter]);
+
+    return diversifyFeedOrder(sorted);
+  }, [events, userLocation, radiusFilter, user, interactions]);
 
   const feedRows = useMemo(() => {
     const rows: FeedRow[] = [];
-    for (let chunk = 0; chunk < chunkCount; chunk += 1) {
-      rows.push(...buildFeedChunk(rankedEvents, chunk));
+    for (let cycle = 0; cycle < cycleCount; cycle += 1) {
+      rows.push(...buildFeedCycle(rankedEvents, cycle));
     }
     return rows;
-  }, [rankedEvents, chunkCount]);
+  }, [rankedEvents, cycleCount]);
+
+  useEffect(() => {
+    setCycleCount(5);
+  }, [radiusFilter, rankedEvents.length]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -364,10 +533,10 @@ export function FeedScreen({
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        onEndReachedThreshold={0.6}
+        onEndReachedThreshold={0.45}
         onEndReached={() => {
           if (rankedEvents.length > 0) {
-            setChunkCount((prev) => prev + 1);
+            setCycleCount((prev) => prev + 1);
           }
         }}
         onViewableItemsChanged={({ viewableItems }) => {
@@ -384,7 +553,17 @@ export function FeedScreen({
             onFlyerImpression(eventId);
           }
         }}
-        ListFooterComponent={<Text style={styles.footerText}>Loading more flyers...</Text>}
+        ListEmptyComponent={
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyTitle}>No flyers match this radius yet.</Text>
+            <Text style={styles.emptySub}>Try 10 mi or Citywide to keep the loop going.</Text>
+          </View>
+        }
+        ListFooterComponent={
+          rankedEvents.length > 0 ? (
+            <Text style={styles.footerText}>Looping more flyers for you...</Text>
+          ) : null
+        }
         renderItem={({ item }) => (
           <FeedCard
             rankedEvent={item.rankedEvent}
@@ -477,6 +656,23 @@ const createStyles = (theme: ThemePalette) =>
   listContent: {
     paddingBottom: 20,
     gap: 8,
+  },
+  emptyWrap: {
+    marginTop: 24,
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    gap: 4,
+  },
+  emptyTitle: {
+    color: theme.text,
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  emptySub: {
+    color: theme.textMuted,
+    fontSize: 12,
+    textAlign: 'center',
   },
   footerText: {
     color: theme.textMuted,
