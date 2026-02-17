@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { ThemePalette, useAppTheme, useThemeMode } from '../theme';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { useThemeMode } from '../theme';
 import { TabKey } from '../types';
 
 interface BottomNavProps {
@@ -10,19 +11,18 @@ interface BottomNavProps {
 
 const tabs: TabKey[] = ['Feed', 'Map', 'Explore', 'Messages', 'Upload', 'Profile'];
 
-const tabIcons: Record<TabKey, string> = {
-  Feed: '🏠',
-  Map: '🗺️',
-  Explore: '🧭',
-  Messages: '💬',
-  Upload: '➕',
-  Profile: '👤',
+const tabIcons: Record<TabKey, { active: keyof typeof Ionicons.glyphMap; idle: keyof typeof Ionicons.glyphMap }> = {
+  Feed: { active: 'home', idle: 'home-outline' },
+  Map: { active: 'map', idle: 'map-outline' },
+  Explore: { active: 'compass', idle: 'compass-outline' },
+  Messages: { active: 'chatbubble-ellipses', idle: 'chatbubble-ellipses-outline' },
+  Upload: { active: 'add-circle', idle: 'add-circle-outline' },
+  Profile: { active: 'person-circle', idle: 'person-circle-outline' },
 };
 
 export function BottomNav({ activeTab, onChange }: BottomNavProps) {
-  const theme = useAppTheme();
   const mode = useThemeMode();
-  const styles = useMemo(() => createStyles(theme, mode), [theme, mode]);
+  const styles = useMemo(() => createStyles(mode), [mode]);
 
   return (
     <View style={styles.wrap}>
@@ -35,8 +35,11 @@ export function BottomNav({ activeTab, onChange }: BottomNavProps) {
             style={[styles.tab, active && styles.tabActive]}
             accessibilityLabel={tab}
           >
-            <Text style={[styles.tabIcon, active && styles.tabIconActive]}>{tabIcons[tab]}</Text>
-            <View style={[styles.tabDot, active && styles.tabDotActive]} />
+            <Ionicons
+              name={active ? tabIcons[tab].active : tabIcons[tab].idle}
+              size={24}
+              color={active ? styles.activeTint.color : styles.idleTint.color}
+            />
           </Pressable>
         );
       })}
@@ -44,45 +47,30 @@ export function BottomNav({ activeTab, onChange }: BottomNavProps) {
   );
 }
 
-const createStyles = (theme: ThemePalette, mode: 'dark' | 'light') =>
+const createStyles = (mode: 'dark' | 'light') =>
   StyleSheet.create({
     wrap: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
-      backgroundColor: mode === 'dark' ? '#0a1218f0' : '#f7fbff',
+      justifyContent: 'space-around',
+      backgroundColor: mode === 'dark' ? '#0b0f13f2' : '#ffffff',
       borderTopWidth: 1,
-      borderColor: mode === 'dark' ? '#ffffff22' : '#c6d5e2',
-      paddingHorizontal: 8,
-      paddingVertical: 8,
+      borderColor: mode === 'dark' ? '#ffffff1f' : '#d8e0e7',
+      paddingHorizontal: 10,
+      paddingVertical: 9,
     },
     tab: {
       flex: 1,
-      paddingVertical: 7,
-      borderRadius: 999,
       alignItems: 'center',
-      marginHorizontal: 2,
-      borderWidth: 1,
-      borderColor: 'transparent',
+      justifyContent: 'center',
+      paddingVertical: 6,
     },
     tabActive: {
-      backgroundColor: mode === 'dark' ? '#ffffff12' : '#0f223012',
-      borderColor: mode === 'dark' ? '#ffffff35' : '#0f22303f',
+      transform: [{ translateY: -1 }],
     },
-    tabIcon: {
-      fontSize: 20,
-      opacity: 0.78,
+    activeTint: {
+      color: mode === 'dark' ? '#f3f7fb' : '#0f141a',
     },
-    tabIconActive: {
-      opacity: 1,
-    },
-    tabDot: {
-      width: 4,
-      height: 4,
-      borderRadius: 999,
-      marginTop: 2,
-      backgroundColor: mode === 'dark' ? '#6f8796' : '#7a8f9b',
-    },
-    tabDotActive: {
-      backgroundColor: theme.primary,
+    idleTint: {
+      color: mode === 'dark' ? '#99acbc' : '#718494',
     },
   });
