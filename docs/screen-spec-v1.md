@@ -10,6 +10,8 @@ Key UI blocks:
 - Required email field.
 - Optional profile photo URL field.
 - One-question-at-a-time event taste quiz (5 total).
+- Interactive animated bubble picker for each quiz step.
+- Bubble options include event photos + moving/floating motion.
 - Locked `Next` progression (next step only unlocks when current step is valid).
 - Step progress indicator + back action.
 

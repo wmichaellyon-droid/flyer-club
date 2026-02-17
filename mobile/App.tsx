@@ -31,20 +31,30 @@ function inferInterestsFromAnswers(answers: EventTasteAnswers) {
   const joined = Object.values(answers).join(' ').toLowerCase();
   const inferred = new Set<string>();
 
-  if (joined.includes('concert') || joined.includes('loud')) {
+  if (
+    joined.includes('concert') ||
+    joined.includes('punk') ||
+    joined.includes('metal') ||
+    joined.includes('rock') ||
+    joined.includes('pop') ||
+    joined.includes('house')
+  ) {
     inferred.add('Nightlife');
   }
-  if (joined.includes('film')) {
+  if (joined.includes('film') || joined.includes('screening')) {
     inferred.add('Film');
   }
-  if (joined.includes('community') || joined.includes('social')) {
+  if (joined.includes('community') || joined.includes('mutual aid') || joined.includes('meetup')) {
     inferred.add('Community');
   }
-  if (joined.includes('diy') || joined.includes('artsy')) {
+  if (joined.includes('diy') || joined.includes('zine') || joined.includes('gallery') || joined.includes('art')) {
     inferred.add('DIY');
     inferred.add('Zines');
   }
-  if (joined.includes('free')) {
+  if (joined.includes('comedy')) {
+    inferred.add('Comedy');
+  }
+  if (joined.includes('free') || joined.includes('under $20')) {
     inferred.add('Community');
   }
 

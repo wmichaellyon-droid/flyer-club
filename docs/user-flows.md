@@ -6,7 +6,7 @@
 2. User enters profile name (required) and unlocks the next step.
 3. User enters email (required) and unlocks the next step.
 4. User optionally adds a profile photo URL (or skips).
-5. User answers 5 event taste questions one-by-one.
+5. User answers 5 event taste questions one-by-one using interactive moving picture bubbles.
 6. User continues to onboarding.
 7. User selects location (`Austin, TX` default preselected).
 8. User selects profile type (`Concert Lover`, `Event Enjoyer`, or `Promoter`).
