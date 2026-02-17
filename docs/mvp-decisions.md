@@ -25,6 +25,16 @@ Bottom navigation for MVP: `Feed`, `Explore`, `Upload`, `Profile`.
 - `Share`: send flyer/event to friend or external apps.
 - `Get Tickets`: open ticket/RSVP URL.
 
+## 3.1 Profile Type Selection (Locked)
+
+During onboarding, every user selects one profile type:
+
+- `Concert Lover`
+- `Event Enjoyer`
+- `Promoter`
+
+Promoter accounts get promoter-specific profile sections and upload tools.
+
 Interaction rules:
 - Double tap on feed flyer toggles `Interested`.
 - `Going` button sets intent to going (and should count as interested for analytics funnel).

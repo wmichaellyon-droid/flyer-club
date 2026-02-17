@@ -1,17 +1,22 @@
 import { useMemo, useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { AVAILABLE_INTERESTS, DEFAULT_USER } from '../mockData';
+import { AVAILABLE_INTERESTS, DEFAULT_USER, PROFILE_ROLES } from '../mockData';
 import { theme } from '../theme';
+import { UserRole } from '../types';
 
 interface OnboardingScreenProps {
-  onComplete: (city: string, interests: string[]) => void;
+  onComplete: (city: string, interests: string[], role: UserRole) => void;
 }
 
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [city, setCity] = useState(DEFAULT_USER.city);
   const [selected, setSelected] = useState<string[]>(DEFAULT_USER.interests);
+  const [role, setRole] = useState<UserRole>(DEFAULT_USER.role);
 
-  const canContinue = useMemo(() => city.trim().length > 0 && selected.length > 0, [city, selected]);
+  const canContinue = useMemo(
+    () => city.trim().length > 0 && selected.length > 0 && !!role,
+    [city, selected, role],
+  );
 
   const toggleInterest = (interest: string) => {
     setSelected((prev) =>
@@ -38,6 +43,25 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         </View>
 
         <View style={styles.block}>
+          <Text style={styles.label}>Profile type</Text>
+          <View style={styles.roleWrap}>
+            {PROFILE_ROLES.map((item) => {
+              const active = role === item.id;
+              return (
+                <Pressable
+                  key={item.id}
+                  onPress={() => setRole(item.id)}
+                  style={[styles.roleCard, active && styles.roleCardActive]}
+                >
+                  <Text style={[styles.roleTitle, active && styles.roleTitleActive]}>{item.title}</Text>
+                  <Text style={[styles.roleDesc, active && styles.roleDescActive]}>{item.description}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.block}>
           <Text style={styles.label}>Pick your interests</Text>
           <View style={styles.chips}>
             {AVAILABLE_INTERESTS.map((interest) => {
@@ -56,7 +80,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         </View>
 
         <Pressable
-          onPress={() => onComplete(city.trim(), selected)}
+          onPress={() => onComplete(city.trim(), selected, role)}
           disabled={!canContinue}
           style={[styles.cta, !canContinue && styles.ctaDisabled]}
         >
@@ -118,6 +142,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  roleWrap: {
+    gap: 8,
+  },
+  roleCard: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  roleCardActive: {
+    borderColor: theme.primary,
+    backgroundColor: theme.primary,
+  },
+  roleTitle: {
+    color: theme.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  roleTitleActive: {
+    color: theme.text,
+  },
+  roleDesc: {
+    color: theme.textMuted,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  roleDescActive: {
+    color: theme.text,
   },
   chip: {
     borderWidth: 1,

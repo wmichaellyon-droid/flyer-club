@@ -4,11 +4,12 @@
 
 1. User opens app and sees onboarding welcome.
 2. User selects location (`Austin, TX` default preselected).
-3. User picks interests (`Music`, `Nightlife`, `Arts`, `Campus`, `Comedy`).
-4. User optionally connects friends or skips.
-5. App lands user in Feed with local cards.
-6. User double taps a flyer (`Interested`) or taps `Going`.
-7. System records activation event.
+3. User selects profile type (`Concert Lover`, `Event Enjoyer`, or `Promoter`).
+4. User picks interests.
+5. User optionally connects friends or skips.
+6. App lands user in Feed with local cards.
+7. User double taps a flyer (`Interested`) or taps `Going`.
+8. System records activation event.
 
 Success condition:
 - User takes first intent action in first session.

@@ -8,6 +8,7 @@ Goal:
 Key UI blocks:
 - Welcome + value statement.
 - Location selector (`Austin` default).
+- Profile type selector (`Concert Lover`, `Event Enjoyer`, `Promoter`).
 - Interest chips.
 - Continue CTA.
 
@@ -19,6 +20,7 @@ Data required:
 - user city
 - user coordinates
 - selected interests
+- selected profile type
 
 Analytics events:
 - `onboarding_started`
@@ -123,6 +125,7 @@ Key UI blocks:
 - Flyer upload control.
 - Event metadata form.
 - AI moderation status (`Analyzing`, `Approved`, `Needs Review`, `Rejected`).
+- If non-promoter: locked state with prompt to switch to promoter profile.
 
 Primary actions:
 - Upload flyer
@@ -151,6 +154,7 @@ Key UI blocks:
 - Tabs/lists: Interested, Going, Saved.
 - Upcoming event cards.
 - Past events placeholder.
+- Promoter variant: publish stats, moderation queue, and creator tools.
 
 Primary actions:
 - Open event detail from list

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { theme } from '../theme';
+import { UserRole } from '../types';
 
 const statuses = ['Analyzing', 'Approved', 'Needs Review', 'Rejected'];
 const checks = [
@@ -20,11 +21,23 @@ function checkState(status: string) {
   return 'pending';
 }
 
-export function UploadScreen() {
+const promoterTools = [
+  'Quick publish + schedule',
+  'Flyer moderation status',
+  'RSVP intent analytics',
+  'Audience share links',
+];
+
+interface UploadScreenProps {
+  userRole: UserRole;
+}
+
+export function UploadScreen({ userRole }: UploadScreenProps) {
   const [flyerUrl, setFlyerUrl] = useState('');
   const [eventTitle, setEventTitle] = useState('');
   const [venue, setVenue] = useState('');
   const [status, setStatus] = useState('Analyzing');
+  const isPromoter = userRole === 'promoter';
 
   const onSubmit = () => {
     if (!flyerUrl || !eventTitle || !venue) {
@@ -37,7 +50,22 @@ export function UploadScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
         <Text style={styles.title}>Upload</Text>
-        <Text style={styles.subtitle}>Promoter flow with flyer moderation status.</Text>
+        <Text style={styles.subtitle}>
+          {isPromoter
+            ? 'Promoter tools for publishing and managing flyers.'
+            : 'Switch to a promoter profile to publish flyers and access creator tools.'}
+        </Text>
+
+        <View style={styles.toolCard}>
+          <Text style={styles.toolTitle}>Promoter Toolset</Text>
+          <View style={styles.toolList}>
+            {promoterTools.map((tool) => (
+              <Text key={tool} style={styles.toolItem}>
+                - {tool}
+              </Text>
+            ))}
+          </View>
+        </View>
 
         <View style={styles.form}>
           <TextInput
@@ -46,6 +74,7 @@ export function UploadScreen() {
             placeholderTextColor={theme.textMuted}
             value={flyerUrl}
             onChangeText={setFlyerUrl}
+            editable={isPromoter}
           />
           <TextInput
             style={styles.input}
@@ -53,6 +82,7 @@ export function UploadScreen() {
             placeholderTextColor={theme.textMuted}
             value={eventTitle}
             onChangeText={setEventTitle}
+            editable={isPromoter}
           />
           <TextInput
             style={styles.input}
@@ -60,11 +90,12 @@ export function UploadScreen() {
             placeholderTextColor={theme.textMuted}
             value={venue}
             onChangeText={setVenue}
+            editable={isPromoter}
           />
         </View>
 
-        <Pressable onPress={onSubmit} style={styles.submitBtn}>
-          <Text style={styles.submitBtnLabel}>Submit Flyer</Text>
+        <Pressable onPress={onSubmit} style={[styles.submitBtn, !isPromoter && styles.submitBtnDisabled]}>
+          <Text style={styles.submitBtnLabel}>{isPromoter ? 'Submit Flyer' : 'Promoter Profile Required'}</Text>
         </Pressable>
 
         <View style={styles.statusCard}>
@@ -129,6 +160,26 @@ const styles = StyleSheet.create({
     color: theme.textMuted,
     fontSize: 13,
   },
+  toolCard: {
+    backgroundColor: theme.surface,
+    borderColor: theme.border,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    gap: 6,
+  },
+  toolTitle: {
+    color: theme.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  toolList: {
+    gap: 4,
+  },
+  toolItem: {
+    color: theme.textMuted,
+    fontSize: 12,
+  },
   form: {
     gap: 8,
     marginTop: 6,
@@ -147,6 +198,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
+  },
+  submitBtnDisabled: {
+    opacity: 0.45,
   },
   submitBtnLabel: {
     color: theme.text,

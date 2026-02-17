@@ -69,8 +69,8 @@ export default function App() {
       <>
         <StatusBar style="light" />
         <OnboardingScreen
-          onComplete={(city, interests) => {
-            setUser({ city, interests });
+          onComplete={(city, interests, role) => {
+            setUser({ city, interests, role });
             setOnboardingComplete(true);
           }}
         />
@@ -110,7 +110,7 @@ export default function App() {
 
         {activeTab === 'Explore' && <ExploreScreen events={AUSTIN_EVENTS} onOpenEvent={onOpenEvent} />}
 
-        {activeTab === 'Upload' && <UploadScreen />}
+        {activeTab === 'Upload' && <UploadScreen userRole={user.role} />}
 
         {activeTab === 'Profile' && (
           <ProfileScreen

@@ -1,9 +1,28 @@
-import { EventItem, UserSetup } from './types';
+import { EventItem, UserRole, UserSetup } from './types';
 
 export const DEFAULT_USER: UserSetup = {
   city: 'Austin, TX',
   interests: ['DIY', 'Film'],
+  role: 'event_enjoyer',
 };
+
+export const PROFILE_ROLES: { id: UserRole; title: string; description: string }[] = [
+  {
+    id: 'concert_lover',
+    title: 'Concert Lover',
+    description: 'Prioritize live sets, tours, and performance-heavy nights.',
+  },
+  {
+    id: 'event_enjoyer',
+    title: 'Event Enjoyer',
+    description: 'Discover all kinds of local events across scenes and neighborhoods.',
+  },
+  {
+    id: 'promoter',
+    title: 'Promoter',
+    description: 'Publish flyers, manage events, and track attendance intent.',
+  },
+];
 
 export const AVAILABLE_INTERESTS = [
   'DIY',

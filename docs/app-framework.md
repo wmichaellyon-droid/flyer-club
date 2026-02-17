@@ -68,7 +68,7 @@ Rules:
 ## 5. High-Level Data Contract
 
 Core entities:
-- `User`: id, handle, city, location, preferences.
+- `User`: id, handle, city, location, preferences, role (`concert_lover|event_enjoyer|promoter`).
 - `Event`: id, title, start_at, venue_id, city, neighborhood, ticket_url.
 - `FlyerPost`: id, event_id, media_url, moderation_status.
 - `Interaction`: user_id, event_id, state (`interested|going|saved`), updated_at.

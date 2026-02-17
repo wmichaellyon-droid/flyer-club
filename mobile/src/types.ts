@@ -4,6 +4,8 @@ export type IntentState = 'interested' | 'going' | 'saved' | undefined;
 
 export type IntentFilter = 'Interested' | 'Going' | 'Saved';
 
+export type UserRole = 'concert_lover' | 'event_enjoyer' | 'promoter';
+
 export interface EventItem {
   id: string;
   title: string;
@@ -28,6 +30,7 @@ export interface EventItem {
 export interface UserSetup {
   city: string;
   interests: string[];
+  role: UserRole;
 }
 
 export type InteractionMap = Record<string, IntentState>;
