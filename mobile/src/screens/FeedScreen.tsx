@@ -76,6 +76,22 @@ function intentLabel(intent: IntentState) {
   return 'Not set';
 }
 
+function socialHandleFromEvent(event: EventItem) {
+  const base = event.postedByRole === 'promoter' ? event.promoter : `${event.promoter} crew`;
+  return base
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 24);
+}
+
+function truncate(value: string, max: number) {
+  if (value.length <= max) {
+    return value;
+  }
+  return `${value.slice(0, max - 1)}...`;
+}
+
 function FeedCard({
   rankedEvent,
   intent,
@@ -96,6 +112,7 @@ function FeedCard({
   onGetTickets: () => Promise<void>;
 }) {
   const { event, distanceMiles } = rankedEvent;
+  const handle = socialHandleFromEvent(event);
   const lastTap = useRef<number>(0);
   const singleTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -121,6 +138,21 @@ function FeedCard({
 
   return (
     <View style={styles.postWrap}>
+      <View style={styles.postHeader}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarLabel}>{handle.slice(0, 1).toUpperCase()}</Text>
+        </View>
+        <View style={styles.headerMeta}>
+          <Text style={styles.headerHandle}>@{handle}</Text>
+          <Text style={styles.postHeaderSub}>
+            {event.neighborhood} • {distanceMiles.toFixed(1)} mi away
+          </Text>
+        </View>
+        <Pressable onPress={onOpenEvent} style={styles.openMoreBtn}>
+          <Text style={styles.openMoreLabel}>Open</Text>
+        </Pressable>
+      </View>
+
       <Pressable
         onPress={onCardTap}
         style={[styles.flyerStage, { backgroundColor: event.heroColor, height: flyerHeight }]}
@@ -131,65 +163,57 @@ function FeedCard({
           style={styles.flyerImage}
           imageStyle={styles.flyerImageAsset}
         >
-          <View style={styles.flyerTint} />
+          <View style={styles.flyerTintTop} />
+          <View style={styles.flyerTintBottom} />
           <View style={styles.flyerOverlay}>
-            <View style={styles.badgeRow}>
-              <Text style={styles.badge}>{event.category}</Text>
-              <Text style={styles.badgeMuted}>{event.ageRating}</Text>
-            </View>
-
+            <Text style={styles.flyerHint}>Double tap to mark Interested</Text>
             <View style={styles.flyerContent}>
-              <Text style={styles.flyerTitle}>{event.title}</Text>
-              <Text style={styles.flyerMeta}>{event.promoter}</Text>
-              <View style={styles.localRow}>
-                <Text style={styles.localBadge}>{event.tags[0] ?? 'Soon'}</Text>
-                <Text style={styles.localBadge}>{distanceMiles.toFixed(1)} mi</Text>
-                <Text style={styles.localBadge}>{event.neighborhood}</Text>
+              <View style={styles.badgeRow}>
+                <Text style={styles.badge}>{event.category}</Text>
+                <Text style={styles.badgeMuted}>{event.subcategory}</Text>
+                <Text style={styles.badgeMuted}>{event.ageRating}</Text>
               </View>
-              <Text style={styles.flyerHint}>Double tap flyer for Interested</Text>
+              <Text style={styles.flyerTitle}>{event.title}</Text>
+              <Text style={styles.flyerMeta}>
+                {event.dateLabel} • {event.timeLabel}
+              </Text>
             </View>
           </View>
         </ImageBackground>
       </Pressable>
 
       <View style={styles.infoPanel}>
-        <Text style={styles.infoTitle}>{event.title}</Text>
-        <Text style={styles.infoRole}>
-          {event.postedByRole === 'promoter' ? 'Promoter post' : 'Community post'}
-        </Text>
-        <Text style={styles.infoSubcategory}>{event.subcategory}</Text>
-        <Text style={styles.infoTime}>
-          {event.dateLabel} - {event.timeLabel}
-        </Text>
-        <Text style={styles.infoVenue}>
-          {event.venue} - {event.address}
-        </Text>
-        <Text style={styles.socialProof}>
-          {event.friendGoing} friends going, {event.friendInterested} interested
-        </Text>
-
         <View style={styles.actionRow}>
-          <Pressable onPress={onSetGoing} style={[styles.actionBtn, styles.actionBtnPrimary]}>
-            <Text style={styles.actionBtnPrimaryLabel}>Going</Text>
-          </Pressable>
           <Pressable onPress={onToggleInterested} style={styles.actionBtn}>
             <Text style={styles.actionBtnLabel}>Interested</Text>
+          </Pressable>
+          <Pressable onPress={onSetGoing} style={[styles.actionBtn, styles.actionBtnPrimary]}>
+            <Text style={styles.actionBtnPrimaryLabel}>Going</Text>
           </Pressable>
           <Pressable onPress={() => void onShareEvent('native')} style={styles.actionBtn}>
             <Text style={styles.actionBtnLabel}>Share</Text>
           </Pressable>
-          <Pressable onPress={() => void onShareEvent('sms')} style={styles.actionBtn}>
-            <Text style={styles.actionBtnLabel}>Text</Text>
-          </Pressable>
           <Pressable onPress={() => void onGetTickets()} style={styles.actionBtn}>
-            <Text style={styles.actionBtnLabel}>Get Tickets</Text>
+            <Text style={styles.actionBtnLabel}>Tickets</Text>
           </Pressable>
         </View>
 
-        <Text style={styles.intentText}>Current: {intentLabel(intent)}</Text>
-        <Pressable onPress={onOpenEvent} style={styles.openBtn}>
-          <Text style={styles.openBtnLabel}>Open full event page</Text>
-        </Pressable>
+        <Text style={styles.socialProof}>
+          {event.friendGoing} going • {event.friendInterested} interested
+        </Text>
+        <Text style={styles.captionLine} numberOfLines={2}>
+          <Text style={styles.captionHandle}>@{handle} </Text>
+          {truncate(event.description, 140)}
+        </Text>
+        <Text style={styles.infoVenue} numberOfLines={1}>
+          {event.venue} • {event.address}
+        </Text>
+        <View style={styles.postFooterRow}>
+          <Text style={styles.intentText}>Status: {intentLabel(intent)}</Text>
+          <Pressable onPress={onOpenEvent}>
+            <Text style={styles.openBtnLabel}>View details</Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -247,8 +271,8 @@ export function FeedScreen({
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Home Feed</Text>
-        <Text style={styles.headerSub}>Endless local flyers around {user.city}</Text>
+        <Text style={styles.headerTitle}>For You</Text>
+        <Text style={styles.headerSub}>Live flyers in {user.city}</Text>
 
         <View style={styles.radiusRow}>
           {radiusOptions.map((option) => {
@@ -316,31 +340,31 @@ const styles = StyleSheet.create({
     backgroundColor: theme.bg,
   },
   header: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    paddingTop: 6,
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+    paddingTop: 8,
     gap: 6,
   },
   headerTitle: {
     color: theme.text,
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
   },
   headerSub: {
     color: theme.textMuted,
-    fontSize: 13,
+    fontSize: 12,
   },
   radiusRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 5,
   },
   radiusChip: {
     borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.surface,
+    borderColor: '#ffffff1f',
+    backgroundColor: '#ffffff08',
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
   },
   radiusChipActive: {
     borderColor: theme.primary,
@@ -348,7 +372,7 @@ const styles = StyleSheet.create({
   },
   radiusLabel: {
     color: theme.textMuted,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
   },
   radiusLabelActive: {
@@ -356,7 +380,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 20,
-    gap: 14,
+    gap: 8,
   },
   footerText: {
     color: theme.textMuted,
@@ -365,11 +389,59 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   postWrap: {
-    overflow: 'hidden',
+    overflow: 'visible',
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#ffffff1a',
-    backgroundColor: theme.surface,
+    backgroundColor: '#0f0c14',
+  },
+  postHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 999,
+    backgroundColor: '#2f2640',
+    borderWidth: 1,
+    borderColor: '#ffffff26',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarLabel: {
+    color: theme.text,
+    fontWeight: '800',
+    fontSize: 12,
+  },
+  headerMeta: {
+    flex: 1,
+  },
+  headerHandle: {
+    color: theme.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  postHeaderSub: {
+    color: theme.textMuted,
+    fontSize: 11,
+    marginTop: 1,
+  },
+  openMoreBtn: {
+    borderWidth: 1,
+    borderColor: '#ffffff29',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#ffffff08',
+  },
+  openMoreLabel: {
+    color: theme.text,
+    fontSize: 11,
+    fontWeight: '700',
   },
   flyerStage: {
     width: '100%',
@@ -383,9 +455,21 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  flyerTint: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#00000066',
+  flyerTintTop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 120,
+    backgroundColor: '#00000055',
+  },
+  flyerTintBottom: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 220,
+    backgroundColor: '#00000077',
   },
   flyerOverlay: {
     flex: 1,
@@ -393,14 +477,14 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   flyerContent: {
-    gap: 10,
-    paddingBottom: 14,
+    gap: 8,
+    paddingBottom: 10,
   },
   flyerTitle: {
     color: theme.text,
     fontWeight: '900',
-    fontSize: 42,
-    lineHeight: 46,
+    fontSize: 36,
+    lineHeight: 40,
     maxWidth: '94%',
     textShadowColor: '#000000b8',
     textShadowOffset: { width: 0, height: 2 },
@@ -408,101 +492,73 @@ const styles = StyleSheet.create({
   },
   flyerMeta: {
     color: '#fff6ffcc',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
   },
   badgeRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
-    paddingTop: 2,
   },
   badge: {
-    backgroundColor: '#00000055',
+    backgroundColor: '#11111194',
     color: theme.text,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 999,
     overflow: 'hidden',
     textTransform: 'uppercase',
   },
   badgeMuted: {
-    backgroundColor: '#0000003d',
+    backgroundColor: '#11111176',
     color: theme.text,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 999,
     overflow: 'hidden',
     textTransform: 'uppercase',
   },
-  localRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 4,
-  },
-  localBadge: {
-    backgroundColor: '#00000038',
-    borderColor: '#ffffff3b',
-    borderWidth: 1,
-    borderRadius: 999,
-    color: theme.text,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    fontSize: 11,
-    overflow: 'hidden',
-  },
   flyerHint: {
-    color: '#f8f0ffc0',
-    fontSize: 12,
+    color: '#f8f0ffcd',
+    fontSize: 11,
     fontWeight: '600',
+    paddingTop: 2,
   },
   infoPanel: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 7,
-    backgroundColor: theme.surface,
-  },
-  infoTitle: {
-    color: theme.text,
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  infoTime: {
-    color: theme.text,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  infoRole: {
-    color: theme.primary,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  infoSubcategory: {
-    color: theme.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    gap: 6,
+    backgroundColor: '#0f0c14',
   },
   infoVenue: {
     color: theme.textMuted,
-    fontSize: 12,
+    fontSize: 11,
   },
   socialProof: {
-    color: '#f8efffd4',
+    color: theme.text,
     fontSize: 12,
-    marginTop: 2,
+    fontWeight: '700',
+  },
+  captionLine: {
+    color: theme.text,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  captionHandle: {
+    color: theme.text,
+    fontWeight: '800',
   },
   actionRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 6,
+    gap: 6,
+    marginBottom: 2,
   },
   actionBtn: {
-    minWidth: '31%',
+    flex: 1,
     backgroundColor: '#ffffff0e',
     paddingVertical: 8,
     borderRadius: 999,
@@ -516,31 +572,27 @@ const styles = StyleSheet.create({
   },
   actionBtnLabel: {
     color: theme.text,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   actionBtnPrimaryLabel: {
     color: theme.text,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
+  },
+  postFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
   },
   intentText: {
     color: '#f8efffb3',
     fontSize: 11,
-    marginTop: 2,
-  },
-  openBtn: {
-    marginTop: 2,
-    alignSelf: 'flex-start',
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: theme.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
   },
   openBtnLabel: {
     color: theme.primary,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
 });
