@@ -101,6 +101,29 @@ create table if not exists public.user_blocks (
   primary key (blocker_user_id, blocked_user_id)
 );
 
+create table if not exists public.user_follows (
+  follower_user_id uuid not null references auth.users(id) on delete cascade,
+  following_user_id uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'accepted' check (status in ('pending', 'accepted')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (follower_user_id, following_user_id),
+  check (follower_user_id <> following_user_id)
+);
+
+create table if not exists public.user_notifications (
+  id uuid primary key default gen_random_uuid(),
+  recipient_user_id uuid not null references auth.users(id) on delete cascade,
+  actor_user_id uuid references auth.users(id) on delete set null,
+  actor_name text not null default '',
+  type text not null default 'follower_going',
+  event_id uuid references public.events(id) on delete set null,
+  event_title text not null default '',
+  message text not null default '',
+  is_read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.analytics_events (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete set null,
@@ -118,6 +141,8 @@ create index if not exists idx_event_entities_entity_id on public.event_entities
 create index if not exists idx_interactions_event_id on public.interactions (event_id);
 create index if not exists idx_shares_event_id on public.shares (event_id);
 create index if not exists idx_reports_event_id on public.event_reports (event_id);
+create index if not exists idx_user_follows_following_status on public.user_follows (following_user_id, status);
+create index if not exists idx_user_notifications_recipient_created on public.user_notifications (recipient_user_id, created_at desc);
 create index if not exists idx_analytics_event_name_created on public.analytics_events (event_name, created_at);
 
 alter table public.profiles enable row level security;
@@ -128,6 +153,8 @@ alter table public.interactions enable row level security;
 alter table public.shares enable row level security;
 alter table public.event_reports enable row level security;
 alter table public.user_blocks enable row level security;
+alter table public.user_follows enable row level security;
+alter table public.user_notifications enable row level security;
 alter table public.analytics_events enable row level security;
 
 drop policy if exists "profiles_select_self" on public.profiles;
@@ -220,6 +247,32 @@ for insert with check (reporter_user_id = auth.uid());
 drop policy if exists "blocks_manage_own" on public.user_blocks;
 create policy "blocks_manage_own" on public.user_blocks
 for all using (blocker_user_id = auth.uid()) with check (blocker_user_id = auth.uid());
+
+drop policy if exists "follows_select_participants" on public.user_follows;
+create policy "follows_select_participants" on public.user_follows
+for select using (follower_user_id = auth.uid() or following_user_id = auth.uid());
+
+drop policy if exists "follows_insert_by_follower" on public.user_follows;
+create policy "follows_insert_by_follower" on public.user_follows
+for insert with check (follower_user_id = auth.uid());
+
+drop policy if exists "follows_update_participants" on public.user_follows;
+create policy "follows_update_participants" on public.user_follows
+for update using (follower_user_id = auth.uid() or following_user_id = auth.uid())
+with check (follower_user_id = auth.uid() or following_user_id = auth.uid());
+
+drop policy if exists "notifications_select_own" on public.user_notifications;
+create policy "notifications_select_own" on public.user_notifications
+for select using (recipient_user_id = auth.uid());
+
+drop policy if exists "notifications_update_own" on public.user_notifications;
+create policy "notifications_update_own" on public.user_notifications
+for update using (recipient_user_id = auth.uid())
+with check (recipient_user_id = auth.uid());
+
+drop policy if exists "notifications_insert_any_auth" on public.user_notifications;
+create policy "notifications_insert_any_auth" on public.user_notifications
+for insert with check (auth.uid() is not null);
 
 drop policy if exists "analytics_insert_any_auth" on public.analytics_events;
 create policy "analytics_insert_any_auth" on public.analytics_events

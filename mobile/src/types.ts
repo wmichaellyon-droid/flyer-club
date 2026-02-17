@@ -177,3 +177,18 @@ export interface FollowRequest {
   requesterName: string;
   requesterHandle: string;
 }
+
+export type SocialNotificationType = 'follower_going';
+
+export interface SocialNotification {
+  id: string;
+  recipientUserId: string;
+  actorUserId: string;
+  actorName: string;
+  type: SocialNotificationType;
+  eventId: string;
+  eventTitle: string;
+  message: string;
+  isRead: boolean;
+  createdAtIso: string;
+}

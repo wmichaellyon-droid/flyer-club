@@ -15,6 +15,7 @@ import {
   ModerationStatus,
   ProfileVisibility,
   ReportReason,
+  SocialNotification,
   StoredIntentState,
   UserRole,
   UserSetup,
@@ -88,6 +89,25 @@ type EventEntityRow = {
   y_ratio: number;
 };
 
+type FollowRow = {
+  follower_user_id: string;
+  following_user_id: string;
+  status: 'pending' | 'accepted';
+};
+
+type NotificationRow = {
+  id: string;
+  recipient_user_id: string;
+  actor_user_id: string;
+  actor_name: string;
+  type: 'follower_going';
+  event_id: string;
+  event_title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+};
+
 const localEvents: EventItem[] = [...AUSTIN_EVENTS];
 const localInteractions: Record<string, InteractionMap> = {};
 const localBlocked: Record<string, Set<string>> = {};
@@ -99,6 +119,26 @@ const localReports: {
   details: string;
   createdAt: string;
 }[] = [];
+const localFollowerGraph: Record<string, string[]> = {
+  'local-dev-user': ['local-follower-1', 'local-follower-2'],
+  'local-follower-1': ['local-dev-user'],
+};
+const localNotificationsByUser: Record<string, SocialNotification[]> = {
+  'local-dev-user': [
+    {
+      id: 'local_notif_seed_1',
+      recipientUserId: 'local-dev-user',
+      actorUserId: 'local-follower-1',
+      actorName: 'Noise Kid',
+      type: 'follower_going',
+      eventId: 'evt_2',
+      eventTitle: 'Rooftop Silent Film + Live Score',
+      message: 'Noise Kid is going to Rooftop Silent Film + Live Score.',
+      isRead: false,
+      createdAtIso: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    },
+  ],
+};
 const localEntities = new Map<string, EntityProfile>();
 
 for (const event of localEvents) {
@@ -248,6 +288,21 @@ function tagFromRows(eventId: string, tagRow: EventEntityRow, entity: EntityProf
     isPublic: entity.isPublic,
     x: Number(tagRow.x_ratio),
     y: Number(tagRow.y_ratio),
+  };
+}
+
+function notificationFromRow(row: NotificationRow): SocialNotification {
+  return {
+    id: row.id,
+    recipientUserId: row.recipient_user_id,
+    actorUserId: row.actor_user_id,
+    actorName: row.actor_name,
+    type: row.type,
+    eventId: row.event_id,
+    eventTitle: row.event_title,
+    message: row.message,
+    isRead: row.is_read,
+    createdAtIso: row.created_at,
   };
 }
 
@@ -841,6 +896,138 @@ export async function logShare(userId: string, eventId: string, destination: str
     destination,
     created_at: new Date().toISOString(),
   });
+}
+
+export async function notifyFollowersGoing(params: {
+  actorUserId: string;
+  actorName: string;
+  eventId: string;
+  eventTitle: string;
+}) {
+  const { actorUserId, actorName, eventId, eventTitle } = params;
+  const safeActorName = actorName.trim() || 'Someone you follow';
+  const message = `${safeActorName} is going to ${eventTitle}.`;
+
+  if (!supabase || actorUserId === 'local-dev-user') {
+    const followerIds = localFollowerGraph[actorUserId] ?? [];
+    if (followerIds.length === 0) {
+      return { sentCount: 0 };
+    }
+
+    const createdAtIso = new Date().toISOString();
+    for (const followerId of followerIds) {
+      if (!localNotificationsByUser[followerId]) {
+        localNotificationsByUser[followerId] = [];
+      }
+      localNotificationsByUser[followerId].unshift({
+        id: `local_notif_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`,
+        recipientUserId: followerId,
+        actorUserId,
+        actorName: safeActorName,
+        type: 'follower_going',
+        eventId,
+        eventTitle,
+        message,
+        isRead: false,
+        createdAtIso,
+      });
+    }
+    return { sentCount: followerIds.length };
+  }
+
+  try {
+    const { data: followers, error: followerError } = await supabase
+      .from('user_follows')
+      .select('follower_user_id,following_user_id,status')
+      .eq('following_user_id', actorUserId)
+      .eq('status', 'accepted')
+      .returns<FollowRow[]>();
+
+    if (followerError || !followers || followers.length === 0) {
+      return { sentCount: 0 };
+    }
+
+    const followerIds = Array.from(new Set(followers.map((item) => item.follower_user_id))).filter(
+      (id) => id !== actorUserId,
+    );
+    if (followerIds.length === 0) {
+      return { sentCount: 0 };
+    }
+
+    const createdAt = new Date().toISOString();
+    const payload = followerIds.map((recipientUserId) => ({
+      recipient_user_id: recipientUserId,
+      actor_user_id: actorUserId,
+      actor_name: safeActorName,
+      type: 'follower_going',
+      event_id: eventId,
+      event_title: eventTitle,
+      message,
+      is_read: false,
+      created_at: createdAt,
+    }));
+
+    const { error: insertError } = await supabase.from('user_notifications').insert(payload);
+    if (insertError) {
+      return { sentCount: 0 };
+    }
+    return { sentCount: followerIds.length };
+  } catch {
+    return { sentCount: 0 };
+  }
+}
+
+export async function fetchNotifications(userId: string, limit = 25): Promise<SocialNotification[]> {
+  if (!supabase || userId === 'local-dev-user') {
+    const local = localNotificationsByUser[userId] ?? [];
+    return [...local].sort((a, b) => b.createdAtIso.localeCompare(a.createdAtIso)).slice(0, limit);
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('user_notifications')
+      .select(
+        'id,recipient_user_id,actor_user_id,actor_name,type,event_id,event_title,message,is_read,created_at',
+      )
+      .eq('recipient_user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+      .returns<NotificationRow[]>();
+
+    if (error || !data) {
+      return [];
+    }
+    return data.map(notificationFromRow);
+  } catch {
+    return [];
+  }
+}
+
+export async function markNotificationsRead(userId: string, notificationIds: string[]) {
+  if (notificationIds.length === 0) {
+    return;
+  }
+
+  if (!supabase || userId === 'local-dev-user') {
+    const list = localNotificationsByUser[userId] ?? [];
+    const idSet = new Set(notificationIds);
+    for (const item of list) {
+      if (idSet.has(item.id)) {
+        item.isRead = true;
+      }
+    }
+    return;
+  }
+
+  try {
+    await supabase
+      .from('user_notifications')
+      .update({ is_read: true })
+      .eq('recipient_user_id', userId)
+      .in('id', notificationIds);
+  } catch {
+    return;
+  }
 }
 
 export async function logAnalytics(userId: string, eventName: string, payload: Record<string, unknown> = {}) {

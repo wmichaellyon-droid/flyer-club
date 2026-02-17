@@ -25,8 +25,11 @@ import {
   fetchBlockedUserIds,
   fetchEvents,
   fetchInteractions,
+  fetchNotifications,
   fetchProfile,
   logShare,
+  markNotificationsRead,
+  notifyFollowersGoing,
   reportEvent,
   saveInteraction,
   setEventModerationStatus,
@@ -49,6 +52,7 @@ import {
   IntentState,
   RadiusFilter,
   ReportReason,
+  SocialNotification,
   TabKey,
   UserLocation,
   UserSetup,
@@ -153,6 +157,7 @@ export default function App() {
     },
   ]);
   const [directInbox, setDirectInbox] = useState<DirectInboxData>({ threads: [], messages: [] });
+  const [socialNotifications, setSocialNotifications] = useState<SocialNotification[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [pendingDmFlyerEventId, setPendingDmFlyerEventId] = useState<string | null>(null);
   const [dmLoaded, setDmLoaded] = useState(false);
@@ -212,9 +217,13 @@ export default function App() {
       }
 
       await refreshData(session.id);
-      const inbox = await loadDirectInbox(session.id, DM_FRIENDS);
+      const [inbox, notifications] = await Promise.all([
+        loadDirectInbox(session.id, DM_FRIENDS),
+        fetchNotifications(session.id),
+      ]);
       if (active) {
         setDirectInbox(inbox);
+        setSocialNotifications(notifications);
         setDmLoaded(true);
       }
       trackEvent(session.id, 'app_opened', { loginComplete: Boolean(profile) });
@@ -233,9 +242,13 @@ export default function App() {
         evt_1: 'interested',
         evt_3: 'going',
       });
-      const inbox = await loadDirectInbox('local-dev-user', DM_FRIENDS);
+      const [inbox, notifications] = await Promise.all([
+        loadDirectInbox('local-dev-user', DM_FRIENDS),
+        fetchNotifications('local-dev-user'),
+      ]);
       if (active) {
         setDirectInbox(inbox);
+        setSocialNotifications(notifications);
         setDmLoaded(true);
       }
       setAuthLoading(false);
@@ -341,6 +354,17 @@ export default function App() {
     }
   }, [activeTab, authUserId, radiusFilter]);
 
+  useEffect(() => {
+    if (activeTab !== 'Messages') {
+      return;
+    }
+    const unreadIds = socialNotifications.filter((item) => !item.isRead).map((item) => item.id);
+    if (unreadIds.length === 0) {
+      return;
+    }
+    onMarkNotificationsRead(unreadIds);
+  }, [activeTab, socialNotifications]);
+
   const updateIntent = async (eventId: string, intent: IntentState) => {
     const event = knownEvents.find((item) => item.id === eventId);
     setInteractions((prev) => setIntentInMap(prev, eventId, intent));
@@ -376,9 +400,25 @@ export default function App() {
     trackEvent(authUserId, 'interested_toggled', { eventId, nextIntent: nextIntent ?? 'none' });
   };
 
-  const onSetGoing = (eventId: string) => {
-    void updateIntent(eventId, 'going');
-    trackEvent(authUserId, 'going_clicked', { eventId });
+  const onSetGoing = async (eventId: string) => {
+    const previousIntent = interactions[eventId];
+    await updateIntent(eventId, 'going');
+
+    let followersNotified = 0;
+    if (previousIntent !== 'going') {
+      const event = knownEvents.find((item) => item.id === eventId);
+      if (event) {
+        const result = await notifyFollowersGoing({
+          actorUserId: authUserId,
+          actorName: user.profileName,
+          eventId: event.id,
+          eventTitle: event.title,
+        });
+        followersNotified = result.sentCount;
+      }
+    }
+
+    trackEvent(authUserId, 'going_clicked', { eventId, followersNotified });
   };
 
   const onSetIntent = (eventId: string, intent: IntentState) => {
@@ -469,6 +509,16 @@ export default function App() {
       friendId: payload.friendId,
       hasFlyer: Boolean(payload.flyerEventId),
     });
+  };
+
+  const onMarkNotificationsRead = (notificationIds: string[]) => {
+    if (notificationIds.length === 0) {
+      return;
+    }
+    setSocialNotifications((prev) =>
+      prev.map((item) => (notificationIds.includes(item.id) ? { ...item, isRead: true } : item)),
+    );
+    void markNotificationsRead(authUserId, notificationIds);
   };
 
   const onShareEvent = async (event: (typeof AUSTIN_EVENTS)[number], destination: 'native' | 'sms') => {
@@ -659,12 +709,14 @@ export default function App() {
             user={user}
             events={knownEvents}
             friends={DM_FRIENDS}
+            notifications={socialNotifications}
             inbox={directInbox}
             selectedThreadId={selectedThreadId}
             pendingFlyerEventId={pendingDmFlyerEventId}
             onSelectThread={onSelectThread}
             onSendMessage={onSendDirectMessage}
             onOpenEvent={(eventId) => onOpenEvent(eventId)}
+            onMarkNotificationsRead={onMarkNotificationsRead}
             onClearPendingFlyer={() => setPendingDmFlyerEventId(null)}
           />
         )}

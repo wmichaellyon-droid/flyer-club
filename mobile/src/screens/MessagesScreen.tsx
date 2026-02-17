@@ -12,18 +12,20 @@ import {
 import { ScreenBackdrop } from '../components/ScreenBackdrop';
 import { DM_QUICK_TEXTS } from '../mockData';
 import { ThemePalette, useAppTheme } from '../theme';
-import { DirectInboxData, DirectMessageFriend, EventItem, UserSetup } from '../types';
+import { DirectInboxData, DirectMessageFriend, EventItem, SocialNotification, UserSetup } from '../types';
 
 interface MessagesScreenProps {
   user: UserSetup;
   events: EventItem[];
   friends: DirectMessageFriend[];
+  notifications: SocialNotification[];
   inbox: DirectInboxData;
   selectedThreadId: string | null;
   pendingFlyerEventId: string | null;
   onSelectThread: (threadId: string | null) => void;
   onSendMessage: (payload: { friendId: string; text: string; flyerEventId?: string }) => void;
   onOpenEvent: (eventId: string) => void;
+  onMarkNotificationsRead: (notificationIds: string[]) => void;
   onClearPendingFlyer: () => void;
 }
 
@@ -32,16 +34,32 @@ function formatTimeLabel(iso: string) {
   return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
+function formatRelativeTime(iso: string) {
+  const elapsedMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.max(1, Math.floor(elapsedMs / (1000 * 60)));
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 export function MessagesScreen({
   user,
   events,
   friends,
+  notifications,
   inbox,
   selectedThreadId,
   pendingFlyerEventId,
   onSelectThread,
   onSendMessage,
   onOpenEvent,
+  onMarkNotificationsRead,
   onClearPendingFlyer,
 }: MessagesScreenProps) {
   const theme = useAppTheme();
@@ -114,6 +132,33 @@ export function MessagesScreen({
         <View style={styles.container}>
           <Text style={styles.title}>Coordinate</Text>
           <Text style={styles.subtitle}>Send flyers + quick plans to friends.</Text>
+
+          <Text style={styles.sectionTitle}>Follower Alerts</Text>
+          <View style={styles.notificationsWrap}>
+            {notifications.slice(0, 4).map((notification) => (
+              <Pressable
+                key={notification.id}
+                style={[styles.notificationRow, !notification.isRead && styles.notificationRowUnread]}
+                onPress={() => {
+                  onOpenEvent(notification.eventId);
+                  if (!notification.isRead) {
+                    onMarkNotificationsRead([notification.id]);
+                  }
+                }}
+              >
+                <View style={styles.notificationMain}>
+                  <Text style={styles.notificationText} numberOfLines={2}>
+                    {notification.message}
+                  </Text>
+                  <Text style={styles.notificationMeta}>
+                    {notification.eventTitle} - {formatRelativeTime(notification.createdAtIso)}
+                  </Text>
+                </View>
+                {!notification.isRead && <View style={styles.notificationDot} />}
+              </Pressable>
+            ))}
+            {notifications.length === 0 && <Text style={styles.notificationEmpty}>No follower alerts yet.</Text>}
+          </View>
 
           {pendingFlyer && (
             <View style={styles.pendingCard}>
@@ -291,6 +336,54 @@ const createStyles = (theme: ThemePalette) =>
   subtitle: {
     color: theme.textMuted,
     fontSize: 12,
+  },
+  notificationsWrap: {
+    borderWidth: 1,
+    borderColor: '#ffffff22',
+    borderRadius: 14,
+    backgroundColor: '#ffffff0c',
+    padding: 8,
+    gap: 6,
+  },
+  notificationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ffffff14',
+    backgroundColor: '#ffffff08',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  notificationRowUnread: {
+    borderColor: theme.primary,
+    backgroundColor: '#ffffff12',
+  },
+  notificationMain: {
+    flex: 1,
+    gap: 2,
+  },
+  notificationText: {
+    color: theme.text,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  notificationMeta: {
+    color: theme.textMuted,
+    fontSize: 10,
+  },
+  notificationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: theme.primary,
+  },
+  notificationEmpty: {
+    color: theme.textMuted,
+    fontSize: 11,
+    textAlign: 'center',
+    paddingVertical: 4,
   },
   pendingCard: {
     borderWidth: 1,
